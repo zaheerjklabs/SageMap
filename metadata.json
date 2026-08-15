@@ -1,0 +1,6 @@
+{
+  "name": "SageMap",
+  "description": "SageMap: A comprehensive interactive learning roadmap and resource discovery platform for AI & Machine Learning, developed by mdzaheerjk.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

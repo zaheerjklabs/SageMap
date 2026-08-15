@@ -1,0 +1,59 @@
+@import "tailwindcss";
+
+@layer base {
+  body {
+    background-color: #090A0F;
+    color: #cbd5e1;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Inter", "Geist", Helvetica, Arial, sans-serif;
+    overflow-x: hidden;
+  }
+}
+
+/* High Density Custom Dot Grid Background Utility */
+.bg-high-density-grid {
+  background-image: radial-gradient(#1e293b 1px, transparent 1px);
+  background-size: 28px 28px;
+}
+
+/* Pipeline Dash Animation */
+@keyframes pipelineDashAnimation {
+  from {
+    stroke-dashoffset: 40;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.pipeline-dash-flow {
+  stroke-dasharray: 10 8;
+  animation: pipelineDashAnimation 1.4s linear infinite;
+}
+
+/* GPU Acceleration for Smooth Dragging & Scaling */
+.canvas-smooth-layer {
+  will-change: transform;
+  transform-style: preserve-3d;
+  backface-visibility: hidden;
+}
+
+/* Custom Sleek Scrollbar */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: #090A0F;
+  border-radius: 2px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #1e293b;
+  border-radius: 2px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #06b6d4;
+}
+
