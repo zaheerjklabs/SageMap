@@ -15,8 +15,7 @@ import {
   Layers, 
   Plus, 
   ExternalLink,
-  SlidersHorizontal,
-  RotateCcw
+  SlidersHorizontal
 } from 'lucide-react';
 import { ROADMAP_TOPICS } from '../data/roadmapData';
 import { ResourceItem, ResourceType, DifficultyLevel, RoadmapTopic } from '../types';
@@ -31,7 +30,6 @@ interface ResourceExplorerViewProps {
   onEditResource?: (resource: ResourceItem) => void;
   onDeleteResource?: (resource: ResourceItem) => void;
   deletedCount?: number;
-  onRestoreAll?: () => void;
 }
 
 export const ResourceExplorerView: React.FC<ResourceExplorerViewProps> = ({
@@ -42,8 +40,7 @@ export const ResourceExplorerView: React.FC<ResourceExplorerViewProps> = ({
   onAddResourceClick,
   onEditResource,
   onDeleteResource,
-  deletedCount = 0,
-  onRestoreAll
+  deletedCount = 0
 }) => {
   const [selectedType, setSelectedType] = useState<string>('all');
   const [selectedTopicId, setSelectedTopicId] = useState<number | 'all'>('all');
@@ -212,23 +209,6 @@ export const ResourceExplorerView: React.FC<ResourceExplorerViewProps> = ({
             ))}
           </div>
         </div>
-
-        {/* Deleted resources indicator */}
-        {deletedCount > 0 && onRestoreAll && (
-          <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-between gap-3 text-xs text-amber-200">
-            <div className="flex items-center gap-2">
-              <span className="font-bold font-mono">{deletedCount}</span>
-              <span>resource{deletedCount > 1 ? 's' : ''} deleted from view</span>
-            </div>
-            <button
-              onClick={onRestoreAll}
-              className="px-3 py-1 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs flex items-center gap-1.5 transition-colors shadow-sm"
-            >
-              <RotateCcw className="w-3.5 h-3.5" />
-              <span>Restore All Deleted</span>
-            </button>
-          </div>
-        )}
 
         {/* Resources Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

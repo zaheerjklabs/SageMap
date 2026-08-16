@@ -139,13 +139,7 @@ export default function App() {
     setIsDeleteModalOpen(false);
   };
 
-  // Restore all deleted resources
-  const handleRestoreAllDeleted = () => {
-    setCollections(prev => ({
-      ...prev,
-      deletedResourceIds: {}
-    }));
-  };
+
 
   // Save topic personal study notes
   const handleSaveNote = (topicId: number, note: string) => {
@@ -245,7 +239,6 @@ export default function App() {
               onEditResource={handleOpenEditResourceModal}
               onDeleteResource={handleOpenDeleteModal}
               deletedCount={deletedCount}
-              onRestoreAll={handleRestoreAllDeleted}
             />
           )}
         </main>
