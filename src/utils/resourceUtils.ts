@@ -56,6 +56,34 @@ export function resolveAllTopics(
 }
 
 /**
+ * Merges Supabase-managed resources into static roadmap topics.
+ * Uses DB resources for a topic when available, otherwise falls back to static data.
+ */
+export function mergeTopicsWithDbResources(
+  topics: RoadmapTopic[],
+  dbResources: ResourceItem[]
+): RoadmapTopic[] {
+  if (dbResources.length === 0) {
+    return topics;
+  }
+
+  const byTopic = new Map<number, ResourceItem[]>();
+  for (const res of dbResources) {
+    const list = byTopic.get(res.topicId) || [];
+    list.push(res);
+    byTopic.set(res.topicId, list);
+  }
+
+  return topics.map((topic) => {
+    const dbForTopic = byTopic.get(topic.id);
+    return {
+      ...topic,
+      resources: dbForTopic && dbForTopic.length > 0 ? dbForTopic : topic.resources
+    };
+  });
+}
+
+/**
  * Resolves all resources across all topics with metadata for cataloging/filtering.
  */
 export function resolveAllCatalogResources(

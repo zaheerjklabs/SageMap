@@ -7,11 +7,12 @@ import {
   Sparkles, 
   Layers, 
   ListOrdered, 
-  Bookmark, 
   Plus, 
   ChevronDown, 
   Github,
-  Code2
+  LogIn,
+  LogOut,
+  ShieldCheck
 } from 'lucide-react';
 import { ROADMAP_TOPICS, CATEGORY_DEFINITIONS } from '../data/roadmapData';
 import { ViewMode } from '../types';
@@ -28,7 +29,11 @@ interface TopBarProps {
   theme: 'dark' | 'light';
   onToggleTheme: () => void;
   savedResourcesCount: number;
+  isAdmin?: boolean;
+  userEmail?: string;
   onAddResourceClick: () => void;
+  onLoginClick: () => void;
+  onLogoutClick: () => void;
 }
 
 export const TopBar: React.FC<TopBarProps> = ({
@@ -43,7 +48,11 @@ export const TopBar: React.FC<TopBarProps> = ({
   theme,
   onToggleTheme,
   savedResourcesCount,
-  onAddResourceClick
+  isAdmin = false,
+  userEmail,
+  onAddResourceClick,
+  onLoginClick,
+  onLogoutClick
 }) => {
   const [showPathfinder, setShowPathfinder] = useState(false);
   const [showCategoryMenu, setShowCategoryMenu] = useState(false);
@@ -213,15 +222,41 @@ export const TopBar: React.FC<TopBarProps> = ({
           </button>
         </div>
 
-        {/* Add Resource Button */}
-        <button
-          onClick={onAddResourceClick}
-          className="hidden md:flex px-2.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-xs font-bold text-slate-200 items-center gap-1.5 transition-colors shrink-0 whitespace-nowrap"
-          title="Add Custom Resource"
-        >
-          <Plus className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
-          <span>Add</span>
-        </button>
+        {/* Add Resource Button (admin only) */}
+        {isAdmin && (
+          <button
+            onClick={onAddResourceClick}
+            className="hidden md:flex px-2.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-xs font-bold text-slate-200 items-center gap-1.5 transition-colors shrink-0 whitespace-nowrap"
+            title="Add Resource"
+          >
+            <Plus className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+            <span>Add</span>
+          </button>
+        )}
+
+        {/* Admin auth controls */}
+        {isAdmin ? (
+          <div className="hidden md:flex items-center gap-2 px-2.5 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-xs shrink-0">
+            <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+            <span className="text-emerald-300 font-bold truncate max-w-[120px]">{userEmail || 'Admin'}</span>
+            <button
+              onClick={onLogoutClick}
+              className="p-1 rounded-lg text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+              title="Sign out"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={onLoginClick}
+            className="hidden md:flex px-2.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-xs font-bold text-slate-200 items-center gap-1.5 transition-colors shrink-0 whitespace-nowrap"
+            title="Admin sign in"
+          >
+            <LogIn className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+            <span>Admin</span>
+          </button>
+        )}
 
         {/* Theme Toggle */}
         <button

@@ -26,10 +26,10 @@ interface ResourceExplorerViewProps {
   savedResources: Record<string, boolean>;
   onToggleSave: (resourceId: string) => void;
   onSelectTopic: (topicId: number) => void;
-  onAddResourceClick: () => void;
+  isAdmin?: boolean;
+  onAddResourceClick?: () => void;
   onEditResource?: (resource: ResourceItem) => void;
   onDeleteResource?: (resource: ResourceItem) => void;
-  deletedCount?: number;
 }
 
 export const ResourceExplorerView: React.FC<ResourceExplorerViewProps> = ({
@@ -37,10 +37,10 @@ export const ResourceExplorerView: React.FC<ResourceExplorerViewProps> = ({
   savedResources,
   onToggleSave,
   onSelectTopic,
+  isAdmin = false,
   onAddResourceClick,
   onEditResource,
-  onDeleteResource,
-  deletedCount = 0
+  onDeleteResource
 }) => {
   const [selectedType, setSelectedType] = useState<string>('all');
   const [selectedTopicId, setSelectedTopicId] = useState<number | 'all'>('all');
@@ -118,13 +118,15 @@ export const ResourceExplorerView: React.FC<ResourceExplorerViewProps> = ({
               <span>Saved Resources ({savedCount})</span>
             </button>
 
-            <button
-              onClick={onAddResourceClick}
-              className="px-4 py-2.5 rounded-2xl bg-gradient-to-r from-cyan-500 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 text-slate-950 font-extrabold text-xs flex items-center gap-2 shadow-lg shadow-cyan-500/20 transition-all"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Add Resource</span>
-            </button>
+            {isAdmin && onAddResourceClick && (
+              <button
+                onClick={onAddResourceClick}
+                className="px-4 py-2.5 rounded-2xl bg-gradient-to-r from-cyan-500 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 text-slate-950 font-extrabold text-xs flex items-center gap-2 shadow-lg shadow-cyan-500/20 transition-all"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Add Resource</span>
+              </button>
+            )}
           </div>
         </div>
 
