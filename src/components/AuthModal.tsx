@@ -57,6 +57,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSignIn,
 
   const formatAuthError = (err: string): string => {
     const errLower = err.toLowerCase();
+    if (errLower.includes('email logins are disabled') || errLower.includes('email_provider_disabled')) {
+      return 'Email logins are disabled in your Supabase project. Go to Supabase Dashboard > Authentication > Providers > Email, and turn ON "Enable Email provider", then click Save.';
+    }
     if (errLower.includes('rate limit') || errLower.includes('rate_limit')) {
       return 'Supabase email rate limit reached (free tier allows ~3-4 emails/hr). Please sign in directly with Email & Password below, or set a password in Supabase Dashboard > Authentication > Users.';
     }
