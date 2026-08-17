@@ -60,7 +60,7 @@ export const AddCustomResourceModal: React.FC<AddCustomResourceModalProps> = ({
       isCustom: true,
       ...(type === 'youtube' && { channelName: channelOrAuthor, duration: durationOrStars }),
       ...(type === 'github' && { author: channelOrAuthor, stars: durationOrStars }),
-      ...(type === 'course' && { instructor: channelOrAuthor, platform: 'Coursera' }),
+      ...(type === 'course' && { instructor: channelOrAuthor, platform: 'Udemy' }),
       ...(type === 'paper' && { authors: channelOrAuthor, year: durationOrStars }),
       ...(type === 'book' && { bookAuthor: channelOrAuthor, bookYear: durationOrStars }),
       ...(type === 'documentation' && { siteName: channelOrAuthor }),
