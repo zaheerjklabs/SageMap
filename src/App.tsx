@@ -401,7 +401,6 @@ export default function App() {
         isOpen={isAuthModalOpen}
         onClose={() => setIsAuthModalOpen(false)}
         onSignIn={signIn}
-        onSignUp={signUp}
       />
     </div>
   );

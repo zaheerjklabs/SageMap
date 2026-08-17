@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  X, Lock, Mail, Loader2, ShieldCheck, AlertCircle, Info, Copy, 
-  Check, UserPlus, LogIn, Sparkles, Wand2, KeyRound, ArrowLeft 
+import {
+  X, Lock, Mail, Loader2, ShieldCheck, AlertCircle, Info, Copy,
+  Check, UserPlus, LogIn, Sparkles, Wand2, KeyRound, ArrowLeft
 } from 'lucide-react';
 import { UserRole, useAuth } from '../contexts/AuthContext';
 import { getAppRedirectUrl } from '../lib/supabase';
@@ -16,14 +16,14 @@ interface AuthModalProps {
 type AuthMode = 'signin' | 'signup' | 'magiclink' | 'forgot' | 'update_password';
 
 export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSignIn, onSignUp }) => {
-  const { 
-    user, 
-    claimAdminRole, 
-    signInWithOtp, 
-    resetPasswordForEmail, 
-    updatePassword, 
-    isPasswordRecovery, 
-    setIsPasswordRecovery 
+  const {
+    user,
+    claimAdminRole,
+    signInWithOtp,
+    resetPasswordForEmail,
+    updatePassword,
+    isPasswordRecovery,
+    setIsPasswordRecovery
   } = useAuth();
 
   const [mode, setMode] = useState<AuthMode>('signin');
@@ -221,10 +221,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSignIn,
                   {mode === 'update_password'
                     ? 'Set new admin password'
                     : mode === 'forgot'
-                    ? 'Reset account password'
-                    : mode === 'magiclink'
-                    ? 'One-click passwordless login'
-                    : 'Cloud database content management'}
+                      ? 'Reset account password'
+                      : mode === 'magiclink'
+                        ? 'One-click passwordless login'
+                        : 'Cloud database content management'}
                 </p>
               </div>
             </div>
@@ -242,11 +242,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSignIn,
               <button
                 type="button"
                 onClick={() => handleModeChange('signin')}
-                className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
-                  mode === 'signin'
+                className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${mode === 'signin'
                     ? 'bg-amber-500 text-slate-950 shadow-md font-black'
                     : 'text-slate-400 hover:text-slate-200'
-                }`}
+                  }`}
               >
                 <LogIn className="w-3.5 h-3.5" />
                 <span>Sign In</span>
@@ -255,11 +254,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSignIn,
               <button
                 type="button"
                 onClick={() => handleModeChange('signup')}
-                className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
-                  mode === 'signup'
+                className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${mode === 'signup'
                     ? 'bg-amber-500 text-slate-950 shadow-md font-black'
                     : 'text-slate-400 hover:text-slate-200'
-                }`}
+                  }`}
               >
                 <UserPlus className="w-3.5 h-3.5" />
                 <span>Create Admin</span>
@@ -268,11 +266,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSignIn,
               <button
                 type="button"
                 onClick={() => handleModeChange('magiclink')}
-                className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
-                  mode === 'magiclink'
+                className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${mode === 'magiclink'
                     ? 'bg-amber-500 text-slate-950 shadow-md font-black'
                     : 'text-slate-400 hover:text-slate-200'
-                }`}
+                  }`}
               >
                 <Wand2 className="w-3.5 h-3.5" />
                 <span>Magic Link</span>
