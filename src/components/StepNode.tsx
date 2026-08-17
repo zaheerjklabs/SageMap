@@ -366,6 +366,12 @@ export const StepNode: React.FC<StepNodeProps> = ({
                 onDelete={onDeleteResource}
               />
             )}
+
+            {totalResources === 0 && (
+              <div className="px-6 py-4 rounded-2xl bg-slate-900/80 border border-slate-800 text-xs text-slate-400 text-center font-mono">
+                No active resources currently listed for this step.
+              </div>
+            )}
           </div>
         </div>
       )}

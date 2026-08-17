@@ -56,51 +56,52 @@ export function resolveAllTopics(
 }
 
 /**
- * Merges Supabase-managed resources into static roadmap topics.
- * When Supabase has resources stored, the Supabase database is the single source of truth,
- * guaranteeing that additions, edits, and deletions are permanent and visible to all users.
+ * Merges Supabase-managed resources into roadmap topics.
+ * When Supabase is initialized, the Supabase database is the permanent single source of truth.
+ * Additions, edits, and deletions are strictly respected and static resources are never resurrected.
  */
 export function mergeTopicsWithDbResources(
   topics: RoadmapTopic[],
-  dbResources: ResourceItem[]
+  dbResources: ResourceItem[],
+  isDbInitialized: boolean = true,
+  deletedResourceIds: Set<string> | Record<string, boolean> = new Set()
 ): RoadmapTopic[] {
-  if (!dbResources || dbResources.length === 0) {
-    return topics;
-  }
-
-  // Group active DB resources by topic ID
-  const dbByTopic = new Map<number, ResourceItem[]>();
-
-  for (const res of dbResources) {
-    if ((res as any).isDeleted || (res as any).deleted) {
-      continue;
+  const isDeletedId = (id: string): boolean => {
+    if (deletedResourceIds instanceof Set) {
+      return deletedResourceIds.has(id);
     }
-    const list = dbByTopic.get(res.topicId) || [];
-    list.push(res);
-    dbByTopic.set(res.topicId, list);
+    return Boolean(deletedResourceIds[id]);
+  };
+
+  if (isDbInitialized) {
+    // Group active DB resources by topic ID
+    const dbByTopic = new Map<number, ResourceItem[]>();
+
+    for (const res of dbResources) {
+      if ((res as any).isDeleted || (res as any).deleted || isDeletedId(res.id)) {
+        continue;
+      }
+      const list = dbByTopic.get(res.topicId) || [];
+      list.push(res);
+      dbByTopic.set(res.topicId, list);
+    }
+
+    return topics.map((topic) => {
+      const topicResources = dbByTopic.get(topic.id) || [];
+      return {
+        ...topic,
+        resources: topicResources
+      };
+    });
   }
 
+  // Fallback ONLY when Supabase is completely unconfigured / uninitialized (offline / demo mode):
   return topics.map((topic) => {
-    // If Supabase has an entry or list for this topic, use the live DB list
-    if (dbByTopic.has(topic.id)) {
-      const dbForTopic = dbByTopic.get(topic.id) || [];
-      return {
-        ...topic,
-        resources: dbForTopic
-      };
-    }
-
-    // If DB is populated overall (seeded) but has 0 items for this specific topic,
-    // it means all items for this topic were deleted in DB
-    if (dbResources.length >= 10) {
-      return {
-        ...topic,
-        resources: []
-      };
-    }
-
-    // Fallback to static topic resources if DB is completely unseeded
-    return topic;
+    const activeStatic = topic.resources.filter((res) => !isDeletedId(res.id));
+    return {
+      ...topic,
+      resources: activeStatic
+    };
   });
 }
 

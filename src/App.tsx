@@ -54,6 +54,8 @@ export default function App() {
   }, [isPasswordRecovery]);
 
   const [dbResources, setDbResources] = useState<ResourceItem[]>([]);
+  const [deletedResourceIds, setDeletedResourceIds] = useState<string[]>([]);
+  const [isDbInitialized, setIsDbInitialized] = useState<boolean>(false);
   const [resourcesLoading, setResourcesLoading] = useState(true);
   const [isSyncing, setIsSyncing] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -68,9 +70,11 @@ export default function App() {
   };
 
   const refreshResources = useCallback(async () => {
-    const resources = await fetchAllResources();
-    setDbResources(resources);
-    return resources;
+    const result = await fetchAllResources();
+    setDbResources(result.resources);
+    setDeletedResourceIds(result.deletedIds);
+    setIsDbInitialized(result.isInitialized);
+    return result;
   }, []);
 
   // Fetch initial resources from Supabase on mount
@@ -80,9 +84,16 @@ export default function App() {
 
   // Subscribe to real-time updates from Supabase so all users see changes immediately
   useEffect(() => {
-    const unsubscribe = subscribeToResourceChanges(({ eventType, resource, oldId }) => {
+    const unsubscribe = subscribeToResourceChanges(({ eventType, resource, oldId, deletedIds }) => {
       if (eventType === 'DELETE' && oldId) {
         setDbResources((prev) => prev.filter((r) => r.id !== oldId));
+        setDeletedResourceIds((prev) => Array.from(new Set([...prev, oldId])));
+      } else if (eventType === 'METADATA_UPDATE' && deletedIds) {
+        setDeletedResourceIds(deletedIds);
+        setDbResources((prev) => {
+          const delSet = new Set(deletedIds);
+          return prev.filter((r) => !delSet.has(r.id));
+        });
       } else if (resource) {
         setDbResources((prev) => {
           const exists = prev.some((r) => r.id === resource.id);
@@ -91,6 +102,7 @@ export default function App() {
           }
           return [resource, ...prev];
         });
+        setDeletedResourceIds((prev) => prev.filter((id) => id !== resource.id));
       }
     });
 
@@ -99,9 +111,9 @@ export default function App() {
     };
   }, []);
 
-  // Auto-seed if Supabase is completely empty and admin is signed in
+  // Auto-seed if Supabase is completely uninitialized and admin is signed in
   useEffect(() => {
-    if (!isAdmin) return;
+    if (!isAdmin || isDbInitialized) return;
 
     const allStaticResources = ROADMAP_TOPICS.flatMap((topic) => topic.resources);
     seedResourcesIfEmpty(allStaticResources).then((seeded) => {
@@ -109,7 +121,7 @@ export default function App() {
         refreshResources();
       }
     });
-  }, [isAdmin, refreshResources]);
+  }, [isAdmin, isDbInitialized, refreshResources]);
 
   useEffect(() => {
     saveCollectionsToStorage(collections);
@@ -124,9 +136,11 @@ export default function App() {
     }
   }, [theme]);
 
+  const deletedIdSet = useMemo(() => new Set(deletedResourceIds), [deletedResourceIds]);
+
   const resolvedTopics = useMemo(() => {
-    return mergeTopicsWithDbResources(ROADMAP_TOPICS, dbResources);
-  }, [dbResources]);
+    return mergeTopicsWithDbResources(ROADMAP_TOPICS, dbResources, isDbInitialized, deletedIdSet);
+  }, [dbResources, isDbInitialized, deletedIdSet]);
 
   const handleToggleSaveResource = (resourceId: string) => {
     setCollections((prev) => {
@@ -152,9 +166,10 @@ export default function App() {
       }
       return [{ ...resource, isEdited: true }, ...prev];
     });
+    setDeletedResourceIds((prev) => prev.filter((id) => id !== resource.id));
 
     try {
-      const saved = await upsertResource(resource);
+      const saved = await upsertResource(resource, deletedResourceIds);
       if (saved) {
         setDbResources((prev) => {
           const exists = prev.some((r) => r.id === saved.id);
@@ -196,20 +211,23 @@ export default function App() {
   const handleConfirmDelete = async (resourceId: string) => {
     if (!isAdmin) return;
 
-    const targetTopicId = deletingResource?.topicId || currentTopicId;
-
     // Optimistic deletion
     setDbResources((prev) => prev.filter((r) => r.id !== resourceId));
+    setDeletedResourceIds((prev) => Array.from(new Set([...prev, resourceId])));
     setCollections((prev) => ({
       ...prev,
       savedResources: {
         ...prev.savedResources,
         [resourceId]: false
+      },
+      deletedResourceIds: {
+        ...prev.deletedResourceIds,
+        [resourceId]: true
       }
     }));
 
     try {
-      await deleteResource(resourceId);
+      await deleteResource(resourceId, deletedResourceIds);
       showToast('Resource deleted permanently from Supabase.');
     } catch (err) {
       console.error('Failed to delete resource in Supabase:', err);
@@ -227,7 +245,7 @@ export default function App() {
     setIsSyncing(true);
     try {
       const currentActiveResources = resolvedTopics.flatMap((t) => t.resources);
-      const success = await pushWebsiteStateToSupabase(currentActiveResources);
+      const success = await pushWebsiteStateToSupabase(currentActiveResources, deletedResourceIds);
       if (success) {
         await refreshResources();
         showToast('Website changes synced to Supabase (deletions and edits applied)!');
