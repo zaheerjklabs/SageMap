@@ -24,11 +24,11 @@ export const isSupabaseConfigured = Boolean(
 
 /**
  * Returns the current application URL dynamically for auth email redirects.
- * Ensures redirects land on the active origin (e.g., https://sagemap.vercel.app)
+ * Ensures redirects land on the active origin (e.g., https://sage-map-six.vercel.app)
  */
 export function getAppRedirectUrl(): string {
   if (typeof window !== 'undefined' && window.location.origin) {
     return window.location.origin;
   }
-  return 'https://sagemap.vercel.app';
+  return 'https://sage-map-six.vercel.app';
 }
