@@ -28,7 +28,7 @@ import { DeleteConfirmModal } from './components/DeleteConfirmModal';
 import { AuthModal } from './components/AuthModal';
 
 export default function App() {
-  const { isAdmin, isLoading: authLoading, signIn, signUp, signOut, user } = useAuth();
+  const { isAdmin, isLoading: authLoading, signIn, signUp, signOut, user, isPasswordRecovery } = useAuth();
 
   const [theme, setTheme] = useState<'dark' | 'light'>(() => getThemeFromStorage());
   const [currentTopicId, setCurrentTopicId] = useState<number>(1);
@@ -45,6 +45,13 @@ export default function App() {
   const [deletingResource, setDeletingResource] = useState<ResourceItem | null>(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState<boolean>(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
+
+  // Automatically open AuthModal if user landed on the page from a password reset email link
+  useEffect(() => {
+    if (isPasswordRecovery) {
+      setIsAuthModalOpen(true);
+    }
+  }, [isPasswordRecovery]);
 
   const [dbResources, setDbResources] = useState<ResourceItem[]>([]);
   const [resourcesLoading, setResourcesLoading] = useState(true);

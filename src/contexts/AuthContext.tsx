@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { User, Session } from '@supabase/supabase-js';
-import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { supabase, isSupabaseConfigured, getAppRedirectUrl } from '../lib/supabase';
 
 export type UserRole = 'admin' | 'user';
 
@@ -10,8 +10,13 @@ interface AuthContextValue {
   role: UserRole | null;
   isAdmin: boolean;
   isLoading: boolean;
+  isPasswordRecovery: boolean;
+  setIsPasswordRecovery: (val: boolean) => void;
   signIn: (email: string, password: string) => Promise<{ error: string | null; role?: UserRole | null }>;
   signUp: (email: string, password: string) => Promise<{ error: string | null; role?: UserRole | null; requiresEmailConfirmation?: boolean }>;
+  signInWithOtp: (email: string) => Promise<{ error: string | null; message?: string }>;
+  resetPasswordForEmail: (email: string) => Promise<{ error: string | null; message?: string }>;
+  updatePassword: (newPassword: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
   refreshRole: () => Promise<UserRole | null>;
   claimAdminRole: () => Promise<{ success: boolean; message: string }>;
@@ -60,6 +65,12 @@ async function fetchUserRole(user: User): Promise<UserRole> {
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
+  const [isPasswordRecovery, setIsPasswordRecovery] = useState<boolean>(() => {
+    if (typeof window !== 'undefined' && window.location.hash.includes('type=recovery')) {
+      return true;
+    }
+    return false;
+  });
   const [role, setRole] = useState<UserRole | null>(() => {
     try {
       const cached = localStorage.getItem('sagemap_admin_role_cache');
@@ -138,13 +149,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         localStorage.removeItem('sagemap_admin_role_cache');
         setIsLoading(false);
       }
+    }).catch((err) => {
+      console.warn('Supabase getSession error:', err);
+      if (isMounted) setIsLoading(false);
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, nextSession) => {
+      async (event, nextSession) => {
         if (!isMounted) return;
         setSession(nextSession);
         setUser(nextSession?.user ?? null);
+
+        if (event === 'PASSWORD_RECOVERY') {
+          setIsPasswordRecovery(true);
+        }
 
         if (nextSession?.user) {
           await loadRole(nextSession.user);
@@ -163,44 +181,120 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [loadRole]);
 
   const signIn = useCallback(async (email: string, password: string) => {
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) {
-      return { error: error.message };
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) {
+        return { error: error.message };
+      }
+      if (data.user) {
+        const userRole = await loadRole(data.user);
+        return { error: null, role: userRole };
+      }
+      return { error: null };
+    } catch (err: any) {
+      return { error: err?.message || 'Network error occurred. Please check your connection.' };
     }
-    if (data.user) {
-      const userRole = await loadRole(data.user);
-      return { error: null, role: userRole };
-    }
-    return { error: null };
   }, [loadRole]);
 
   const signUp = useCallback(async (email: string, password: string) => {
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password
-    });
+    try {
+      const redirectUrl = getAppRedirectUrl();
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: redirectUrl,
+        }
+      });
 
-    if (error) {
-      return { error: error.message };
-    }
-
-    if (data.user) {
-      // Auto-insert profile as admin
-      await supabase
-        .from('profiles')
-        .upsert({ id: data.user.id, email: data.user.email, role: 'admin' }, { onConflict: 'id' });
-
-      // If user session is immediate (email confirm disabled in Supabase)
-      if (data.session) {
-        const userRole = await loadRole(data.user);
-        return { error: null, role: userRole || 'admin', requiresEmailConfirmation: false };
+      if (error) {
+        return { error: error.message };
       }
 
-      return { error: null, role: 'admin', requiresEmailConfirmation: true };
-    }
+      if (data.user) {
+        // Auto-insert profile as admin
+        try {
+          await supabase
+            .from('profiles')
+            .upsert({ id: data.user.id, email: data.user.email, role: 'admin' }, { onConflict: 'id' });
+        } catch {
+          // non-blocking
+        }
 
-    return { error: null };
+        // If user session is immediate (email confirm disabled in Supabase)
+        if (data.session) {
+          const userRole = await loadRole(data.user);
+          return { error: null, role: userRole || 'admin', requiresEmailConfirmation: false };
+        }
+
+        return { error: null, role: 'admin', requiresEmailConfirmation: true };
+      }
+
+      return { error: null };
+    } catch (err: any) {
+      return { error: err?.message || 'Network error occurred during registration.' };
+    }
   }, [loadRole]);
+
+  const signInWithOtp = useCallback(async (email: string) => {
+    try {
+      const redirectUrl = getAppRedirectUrl();
+      const { error } = await supabase.auth.signInWithOtp({
+        email,
+        options: {
+          emailRedirectTo: redirectUrl,
+        }
+      });
+
+      if (error) {
+        return { error: error.message };
+      }
+
+      return {
+        error: null,
+        message: `Magic sign-in link sent to ${email}! Check your inbox and click the link to log in.`
+      };
+    } catch (err: any) {
+      return { error: err?.message || 'Failed to send magic link. Please check your connection.' };
+    }
+  }, []);
+
+  const resetPasswordForEmail = useCallback(async (email: string) => {
+    try {
+      const redirectUrl = getAppRedirectUrl();
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: redirectUrl,
+      });
+
+      if (error) {
+        return { error: error.message };
+      }
+
+      return {
+        error: null,
+        message: `Password reset link sent to ${email}! Check your inbox to reset your password.`
+      };
+    } catch (err: any) {
+      return { error: err?.message || 'Failed to send password reset email. Please check your connection.' };
+    }
+  }, []);
+
+  const updatePassword = useCallback(async (newPassword: string) => {
+    try {
+      const { error } = await supabase.auth.updateUser({
+        password: newPassword,
+      });
+
+      if (error) {
+        return { error: error.message };
+      }
+
+      setIsPasswordRecovery(false);
+      return { error: null };
+    } catch (err: any) {
+      return { error: err?.message || 'Failed to update password.' };
+    }
+  }, []);
 
   const signOut = useCallback(async () => {
     await supabase.auth.signOut();
@@ -214,8 +308,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     role,
     isAdmin: role === 'admin',
     isLoading,
+    isPasswordRecovery,
+    setIsPasswordRecovery,
     signIn,
     signUp,
+    signInWithOtp,
+    resetPasswordForEmail,
+    updatePassword,
     signOut,
     refreshRole,
     claimAdminRole
@@ -231,3 +330,4 @@ export function useAuth() {
   }
   return context;
 }
+
