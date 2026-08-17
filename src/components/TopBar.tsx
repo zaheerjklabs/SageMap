@@ -12,7 +12,9 @@ import {
   Github,
   LogIn,
   LogOut,
-  ShieldCheck
+  ShieldCheck,
+  CloudUpload,
+  Loader2
 } from 'lucide-react';
 import { ROADMAP_TOPICS, CATEGORY_DEFINITIONS } from '../data/roadmapData';
 import { ViewMode } from '../types';
@@ -34,6 +36,8 @@ interface TopBarProps {
   onAddResourceClick: () => void;
   onLoginClick: () => void;
   onLogoutClick: () => void;
+  onSyncDb?: () => Promise<void>;
+  isSyncing?: boolean;
 }
 
 export const TopBar: React.FC<TopBarProps> = ({
@@ -52,7 +56,9 @@ export const TopBar: React.FC<TopBarProps> = ({
   userEmail,
   onAddResourceClick,
   onLoginClick,
-  onLogoutClick
+  onLogoutClick,
+  onSyncDb,
+  isSyncing = false
 }) => {
   const [showPathfinder, setShowPathfinder] = useState(false);
   const [showCategoryMenu, setShowCategoryMenu] = useState(false);
@@ -222,16 +228,34 @@ export const TopBar: React.FC<TopBarProps> = ({
           </button>
         </div>
 
-        {/* Add Resource Button (admin only) */}
+        {/* Admin action buttons */}
         {isAdmin && (
-          <button
-            onClick={onAddResourceClick}
-            className="hidden md:flex px-2.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-xs font-bold text-slate-200 items-center gap-1.5 transition-colors shrink-0 whitespace-nowrap"
-            title="Add Resource"
-          >
-            <Plus className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
-            <span>Add</span>
-          </button>
+          <>
+            {onSyncDb && (
+              <button
+                onClick={onSyncDb}
+                disabled={isSyncing}
+                className="hidden lg:flex px-2.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 disabled:opacity-60 border border-slate-800 text-xs font-bold text-slate-200 items-center gap-1.5 transition-colors shrink-0 whitespace-nowrap"
+                title="Push current website resources and delete removed items in Supabase"
+              >
+                {isSyncing ? (
+                  <Loader2 className="w-3.5 h-3.5 text-amber-400 animate-spin shrink-0" />
+                ) : (
+                  <CloudUpload className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                )}
+                <span>{isSyncing ? 'Syncing...' : 'Sync DB'}</span>
+              </button>
+            )}
+
+            <button
+              onClick={onAddResourceClick}
+              className="hidden md:flex px-2.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-xs font-bold text-slate-200 items-center gap-1.5 transition-colors shrink-0 whitespace-nowrap"
+              title="Add Resource"
+            >
+              <Plus className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+              <span>Add</span>
+            </button>
+          </>
         )}
 
         {/* Admin auth controls */}

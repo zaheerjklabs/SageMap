@@ -57,29 +57,50 @@ export function resolveAllTopics(
 
 /**
  * Merges Supabase-managed resources into static roadmap topics.
- * Uses DB resources for a topic when available, otherwise falls back to static data.
+ * When Supabase has resources stored, the Supabase database is the single source of truth,
+ * guaranteeing that additions, edits, and deletions are permanent and visible to all users.
  */
 export function mergeTopicsWithDbResources(
   topics: RoadmapTopic[],
   dbResources: ResourceItem[]
 ): RoadmapTopic[] {
-  if (dbResources.length === 0) {
+  if (!dbResources || dbResources.length === 0) {
     return topics;
   }
 
-  const byTopic = new Map<number, ResourceItem[]>();
+  // Group active DB resources by topic ID
+  const dbByTopic = new Map<number, ResourceItem[]>();
+
   for (const res of dbResources) {
-    const list = byTopic.get(res.topicId) || [];
+    if ((res as any).isDeleted || (res as any).deleted) {
+      continue;
+    }
+    const list = dbByTopic.get(res.topicId) || [];
     list.push(res);
-    byTopic.set(res.topicId, list);
+    dbByTopic.set(res.topicId, list);
   }
 
   return topics.map((topic) => {
-    const dbForTopic = byTopic.get(topic.id);
-    return {
-      ...topic,
-      resources: dbForTopic && dbForTopic.length > 0 ? dbForTopic : topic.resources
-    };
+    // If Supabase has an entry or list for this topic, use the live DB list
+    if (dbByTopic.has(topic.id)) {
+      const dbForTopic = dbByTopic.get(topic.id) || [];
+      return {
+        ...topic,
+        resources: dbForTopic
+      };
+    }
+
+    // If DB is populated overall (seeded) but has 0 items for this specific topic,
+    // it means all items for this topic were deleted in DB
+    if (dbResources.length >= 10) {
+      return {
+        ...topic,
+        resources: []
+      };
+    }
+
+    // Fallback to static topic resources if DB is completely unseeded
+    return topic;
   });
 }
 

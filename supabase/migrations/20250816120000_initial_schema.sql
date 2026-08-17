@@ -1,6 +1,6 @@
--- SageMap initial schema: profiles + resources with RLS
+-- SageMap initial schema: profiles + resources with RLS and Supabase Realtime
 
--- User profiles linked to Supabase Auth
+-- 1. User profiles linked to Supabase Auth
 create table if not exists public.profiles (
   id uuid references auth.users on delete cascade primary key,
   email text,
@@ -10,11 +10,20 @@ create table if not exists public.profiles (
 
 alter table public.profiles enable row level security;
 
+-- Profile RLS Policies
 create policy "Users can view own profile"
   on public.profiles for select
   using (auth.uid() = id);
 
--- Learning resources (admin-managed content)
+create policy "Users can insert own profile"
+  on public.profiles for insert
+  with check (auth.uid() = id);
+
+create policy "Users can update own profile"
+  on public.profiles for update
+  using (auth.uid() = id);
+
+-- 2. Learning resources (cloud content catalog)
 create table if not exists public.resources (
   id text primary key,
   topic_id integer not null,
@@ -27,12 +36,12 @@ create index if not exists resources_topic_id_idx on public.resources (topic_id)
 
 alter table public.resources enable row level security;
 
--- Everyone (including anonymous visitors) can read resources
+-- Everyone (including anonymous public visitors) can view resources
 create policy "Resources are viewable by everyone"
   on public.resources for select
   using (true);
 
--- Only admins can create, update, or delete resources
+-- Only admins can create, update, or delete resources in the cloud
 create policy "Admins can insert resources"
   on public.resources for insert
   with check (
@@ -60,7 +69,7 @@ create policy "Admins can delete resources"
     )
   );
 
--- Auto-create profile when a user signs up
+-- 3. Auto-create profile trigger on auth.users insert
 create or replace function public.handle_new_user()
 returns trigger
 language plpgsql
@@ -69,7 +78,8 @@ set search_path = public
 as $$
 begin
   insert into public.profiles (id, email, role)
-  values (new.id, new.email, 'user');
+  values (new.id, new.email, 'user')
+  on conflict (id) do nothing;
   return new;
 end;
 $$;
@@ -80,7 +90,7 @@ create trigger on_auth_user_created
   after insert on auth.users
   for each row execute function public.handle_new_user();
 
--- Keep updated_at in sync
+-- 4. Automatically sync updated_at timestamps
 create or replace function public.set_updated_at()
 returns trigger
 language plpgsql
@@ -96,3 +106,6 @@ drop trigger if exists resources_set_updated_at on public.resources;
 create trigger resources_set_updated_at
   before update on public.resources
   for each row execute function public.set_updated_at();
+
+-- 5. Enable Supabase Realtime broadcast for resources
+alter publication supabase_realtime add table public.resources;

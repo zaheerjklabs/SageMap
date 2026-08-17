@@ -67,10 +67,7 @@ export const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
           </button>
           <button
             type="button"
-            onClick={() => {
-              onConfirmDelete(resource.id);
-              onClose();
-            }}
+            onClick={() => onConfirmDelete(resource.id)}
             className="px-5 py-2 rounded-xl bg-red-600 hover:bg-red-500 text-white font-extrabold text-xs shadow-lg shadow-red-600/30 flex items-center gap-1.5 transition-all"
           >
             <Trash2 className="w-3.5 h-3.5" />

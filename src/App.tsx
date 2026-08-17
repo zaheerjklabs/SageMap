@@ -12,7 +12,9 @@ import {
   fetchAllResources,
   upsertResource,
   deleteResource,
-  seedResourcesIfEmpty
+  seedResourcesIfEmpty,
+  pushWebsiteStateToSupabase,
+  subscribeToResourceChanges
 } from './services/resourceService';
 import { useAuth } from './contexts/AuthContext';
 import { TopBar } from './components/TopBar';
@@ -26,7 +28,7 @@ import { DeleteConfirmModal } from './components/DeleteConfirmModal';
 import { AuthModal } from './components/AuthModal';
 
 export default function App() {
-  const { isAdmin, isLoading: authLoading, signIn, signOut, user } = useAuth();
+  const { isAdmin, isLoading: authLoading, signIn, signUp, signOut, user } = useAuth();
 
   const [theme, setTheme] = useState<'dark' | 'light'>(() => getThemeFromStorage());
   const [currentTopicId, setCurrentTopicId] = useState<number>(1);
@@ -46,8 +48,17 @@ export default function App() {
 
   const [dbResources, setDbResources] = useState<ResourceItem[]>([]);
   const [resourcesLoading, setResourcesLoading] = useState(true);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const [collections, setCollections] = useState<UserCollections>(() => loadCollectionsFromStorage());
+
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => {
+      setToastMessage((current) => (current === msg ? null : current));
+    }, 3500);
+  };
 
   const refreshResources = useCallback(async () => {
     const resources = await fetchAllResources();
@@ -55,15 +66,42 @@ export default function App() {
     return resources;
   }, []);
 
+  // Fetch initial resources from Supabase on mount
   useEffect(() => {
     refreshResources().finally(() => setResourcesLoading(false));
   }, [refreshResources]);
 
+  // Subscribe to real-time updates from Supabase so all users see changes immediately
+  useEffect(() => {
+    const unsubscribe = subscribeToResourceChanges(({ eventType, resource, oldId }) => {
+      if (eventType === 'DELETE' && oldId) {
+        setDbResources((prev) => prev.filter((r) => r.id !== oldId));
+      } else if (resource) {
+        setDbResources((prev) => {
+          const exists = prev.some((r) => r.id === resource.id);
+          if (exists) {
+            return prev.map((r) => (r.id === resource.id ? resource : r));
+          }
+          return [resource, ...prev];
+        });
+      }
+    });
+
+    return () => {
+      unsubscribe();
+    };
+  }, []);
+
+  // Auto-seed if Supabase is completely empty and admin is signed in
   useEffect(() => {
     if (!isAdmin) return;
 
     const allStaticResources = ROADMAP_TOPICS.flatMap((topic) => topic.resources);
-    seedResourcesIfEmpty(allStaticResources).then(() => refreshResources());
+    seedResourcesIfEmpty(allStaticResources).then((seeded) => {
+      if (seeded) {
+        refreshResources();
+      }
+    });
   }, [isAdmin, refreshResources]);
 
   useEffect(() => {
@@ -84,7 +122,7 @@ export default function App() {
   }, [dbResources]);
 
   const handleToggleSaveResource = (resourceId: string) => {
-    setCollections(prev => {
+    setCollections((prev) => {
       const nextSaved = !prev.savedResources[resourceId];
       return {
         ...prev,
@@ -99,20 +137,32 @@ export default function App() {
   const handleSaveResource = async (resource: ResourceItem, isEdit: boolean) => {
     if (!isAdmin) return;
 
+    // Optimistic state update
+    setDbResources((prev) => {
+      const exists = prev.some((r) => r.id === resource.id);
+      if (exists) {
+        return prev.map((r) => (r.id === resource.id ? { ...resource, isEdited: true } : r));
+      }
+      return [{ ...resource, isEdited: true }, ...prev];
+    });
+
     try {
       const saved = await upsertResource(resource);
       if (saved) {
-        setDbResources(prev => {
-          const exists = prev.some(r => r.id === saved.id);
+        setDbResources((prev) => {
+          const exists = prev.some((r) => r.id === saved.id);
           if (exists) {
-            return prev.map(r => (r.id === saved.id ? saved : r));
+            return prev.map((r) => (r.id === saved.id ? saved : r));
           }
           return [saved, ...prev];
         });
+        showToast(isEdit ? 'Resource updated permanently in Supabase!' : 'Resource added permanently to Supabase!');
       }
     } catch (err) {
+      console.error('Failed to save resource to Supabase:', err);
       const message = err instanceof Error ? err.message : 'Failed to save resource';
-      alert(message);
+      alert(`Supabase Error: ${message}`);
+      refreshResources();
     }
   };
 
@@ -139,27 +189,54 @@ export default function App() {
   const handleConfirmDelete = async (resourceId: string) => {
     if (!isAdmin) return;
 
+    const targetTopicId = deletingResource?.topicId || currentTopicId;
+
+    // Optimistic deletion
+    setDbResources((prev) => prev.filter((r) => r.id !== resourceId));
+    setCollections((prev) => ({
+      ...prev,
+      savedResources: {
+        ...prev.savedResources,
+        [resourceId]: false
+      }
+    }));
+
     try {
       await deleteResource(resourceId);
-      setDbResources(prev => prev.filter(r => r.id !== resourceId));
-      setCollections(prev => ({
-        ...prev,
-        savedResources: {
-          ...prev.savedResources,
-          [resourceId]: false
-        }
-      }));
+      showToast('Resource deleted permanently from Supabase.');
     } catch (err) {
+      console.error('Failed to delete resource in Supabase:', err);
       const message = err instanceof Error ? err.message : 'Failed to delete resource';
-      alert(message);
+      alert(`Supabase Error: ${message}`);
+      refreshResources();
     }
 
     setDeletingResource(null);
     setIsDeleteModalOpen(false);
   };
 
+  const handleSyncAll = async () => {
+    if (!isAdmin) return;
+    setIsSyncing(true);
+    try {
+      const currentActiveResources = resolvedTopics.flatMap((t) => t.resources);
+      const success = await pushWebsiteStateToSupabase(currentActiveResources);
+      if (success) {
+        await refreshResources();
+        showToast('Website changes synced to Supabase (deletions and edits applied)!');
+      } else {
+        alert('Could not complete database sync. Check your connection or console.');
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Sync failed';
+      alert(`Sync Error: ${message}`);
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
   const handleSaveNote = (topicId: number, note: string) => {
-    setCollections(prev => ({
+    setCollections((prev) => ({
       ...prev,
       topicNotes: {
         ...prev.topicNotes,
@@ -170,7 +247,7 @@ export default function App() {
 
   const handleSelectTopic = (topicId: number) => {
     setCurrentTopicId(topicId);
-    setCollections(prev => ({ ...prev, lastVisitedTopicId: topicId }));
+    setCollections((prev) => ({ ...prev, lastVisitedTopicId: topicId }));
   };
 
   const handleOpenTopicDashboard = (topicId: number) => {
@@ -180,10 +257,10 @@ export default function App() {
 
   const activeDashboardTopic = useMemo(() => {
     if (!dashboardTopicId) return null;
-    return resolvedTopics.find(t => t.id === dashboardTopicId) ?? null;
+    return resolvedTopics.find((t) => t.id === dashboardTopicId) ?? null;
   }, [dashboardTopicId, resolvedTopics]);
 
-  const savedCount = Object.keys(collections.savedResources).filter(k => collections.savedResources[k]).length;
+  const savedCount = Object.keys(collections.savedResources).filter((k) => collections.savedResources[k]).length;
 
   const adminEditHandler = isAdmin ? handleOpenEditResourceModal : undefined;
   const adminDeleteHandler = isAdmin ? handleOpenDeleteModal : undefined;
@@ -203,21 +280,30 @@ export default function App() {
         viewMode={viewMode}
         onViewModeChange={setViewMode}
         theme={theme}
-        onToggleTheme={() => setTheme(prev => prev === 'dark' ? 'light' : 'dark')}
+        onToggleTheme={() => setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'))}
         savedResourcesCount={savedCount}
         isAdmin={isAdmin}
         userEmail={user?.email}
         onAddResourceClick={() => handleOpenAddResourceModal(currentTopicId)}
         onLoginClick={() => setIsAuthModalOpen(true)}
         onLogoutClick={signOut}
+        onSyncDb={handleSyncAll}
+        isSyncing={isSyncing}
       />
+
+      {toastMessage && (
+        <div className="fixed bottom-6 right-6 z-50 px-4 py-2.5 rounded-2xl bg-[#0D1117]/95 border border-emerald-500/40 text-emerald-300 text-xs font-bold shadow-2xl backdrop-blur-md animate-fadeIn flex items-center gap-2">
+          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+          <span>{toastMessage}</span>
+        </div>
+      )}
 
       <div className="flex-1 flex overflow-hidden relative">
         <Sidebar
           currentTopicId={currentTopicId}
           onSelectTopic={handleSelectTopic}
           isOpen={isSidebarOpen}
-          onToggleOpen={() => setIsSidebarOpen(prev => !prev)}
+          onToggleOpen={() => setIsSidebarOpen((prev) => !prev)}
           onOpenTopicDashboard={handleOpenTopicDashboard}
         />
 
@@ -308,6 +394,7 @@ export default function App() {
         isOpen={isAuthModalOpen}
         onClose={() => setIsAuthModalOpen(false)}
         onSignIn={signIn}
+        onSignUp={signUp}
       />
     </div>
   );
