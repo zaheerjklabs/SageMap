@@ -73,34 +73,54 @@ export function mergeTopicsWithDbResources(
     return Boolean(deletedResourceIds[id]);
   };
 
-  if (isDbInitialized) {
-    // Group active DB resources by topic ID
-    const dbByTopic = new Map<number, ResourceItem[]>();
-
-    for (const res of dbResources) {
-      if ((res as any).isDeleted || (res as any).deleted || isDeletedId(res.id)) {
-        continue;
-      }
-      const list = dbByTopic.get(res.topicId) || [];
-      list.push(res);
-      dbByTopic.set(res.topicId, list);
+  // Map of DB resources by resource ID
+  const dbById = new Map<string, ResourceItem>();
+  for (const res of dbResources) {
+    if ((res as any).isDeleted || (res as any).deleted || isDeletedId(res.id)) {
+      continue;
     }
-
-    return topics.map((topic) => {
-      const topicResources = dbByTopic.get(topic.id) || [];
-      return {
-        ...topic,
-        resources: topicResources
-      };
-    });
+    dbById.set(res.id, res);
   }
 
-  // Fallback ONLY when Supabase is completely unconfigured / uninitialized (offline / demo mode):
+  // Set of all static resource IDs across all topics
+  const staticResourceIds = new Set(topics.flatMap((t) => t.resources.map((r) => r.id)));
+
+  // Collect custom (non-static) DB resources grouped by topicId
+  const customDbByTopic = new Map<number, ResourceItem[]>();
+  for (const res of dbResources) {
+    if ((res as any).isDeleted || (res as any).deleted || isDeletedId(res.id)) {
+      continue;
+    }
+    if (!staticResourceIds.has(res.id)) {
+      const list = customDbByTopic.get(res.topicId) || [];
+      list.push(res);
+      customDbByTopic.set(res.topicId, list);
+    }
+  }
+
   return topics.map((topic) => {
-    const activeStatic = topic.resources.filter((res) => !isDeletedId(res.id));
+    // 1. Process static resources for this topic:
+    //    Use edited version from DB if available, unless deleted
+    const resolvedStatic: ResourceItem[] = [];
+    for (const staticRes of topic.resources) {
+      if (isDeletedId(staticRes.id)) {
+        continue;
+      }
+      const fromDb = dbById.get(staticRes.id);
+      if (fromDb) {
+        resolvedStatic.push({ ...fromDb, isEdited: true });
+      } else {
+        resolvedStatic.push(staticRes);
+      }
+    }
+
+    // 2. Append any custom resources added via DB for this topic
+    const customForTopic = customDbByTopic.get(topic.id) || [];
+    const allTopicResources = [...resolvedStatic, ...customForTopic];
+
     return {
       ...topic,
-      resources: activeStatic
+      resources: allTopicResources
     };
   });
 }

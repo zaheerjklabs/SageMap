@@ -257,13 +257,13 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
             type="button"
             onClick={handleExpandAll}
             className="w-full px-2 py-1 rounded-md text-[11px] font-bold text-amber-300 bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 flex items-center justify-between transition-all shadow-sm"
-            title="Expand all 19 steps simultaneously"
+            title={`Expand all ${topics.length} steps simultaneously`}
           >
             <span className="flex items-center gap-1.5">
               <Expand className="w-3 h-3 shrink-0" />
               <span>Expand All</span>
             </span>
-            <span className="text-[9px] font-mono px-1 rounded bg-amber-500/20 text-amber-300">19</span>
+            <span className="text-[9px] font-mono px-1 rounded bg-amber-500/20 text-amber-300">{topics.length}</span>
           </button>
 
           <button

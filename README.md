@@ -51,7 +51,7 @@ Rather than static lists or passive documents, SageMap gives you an **interactiv
 | | Feature | Description |
 |---|---|---|
 | 🗺️ | **Interactive Visual Canvas** | Infinite zoom & pan directed acyclic graph (DAG) layout with dynamic node expansion |
-| 📊 | **Curriculum Matrix View** | High-density tabular knowledge matrix covering all 18 specialization steps |
+| 📊 | **Curriculum Matrix View** | High-density tabular knowledge matrix covering all 20 specialization steps |
 | 🔍 | **Resource Discovery Explorer** | Multi-faceted catalog with instantaneous global search and tag filtering |
 | ⚡ | **Supabase Realtime Cloud Sync** | Live PostgreSQL synchronization across all connected clients via Supabase Realtime |
 | 🛡️ | **Admin Content Management** | Role-based authentication (`admin` / `user`) for adding, editing, and deleting resources live |
@@ -65,7 +65,7 @@ Rather than static lists or passive documents, SageMap gives you an **interactiv
 
 ## 🗺️ Curriculum & Roadmap Steps
 
-SageMap organizes modern AI engineering into 18 systematic master steps across 5 core pillars:
+SageMap organizes modern AI engineering into 20 systematic master steps across 5 core pillars:
 
 ```
 Foundations  →  Data & ML  →  Deep & GenAI  →  Agentic Systems  →  MLOps & Cloud
@@ -74,23 +74,25 @@ Foundations  →  Data & ML  →  Deep & GenAI  →  Agentic Systems  →  MLOps
 | Step | Topic | Category | Key Focus Areas & Technologies |
 |---|---|---|---|
 | **01** | **Python Programming** | Core Foundations | OOP, AsyncIO, Metaprogramming, Pydantic, FastAPI, uv, Pytest |
-| **02** | **Mathematics & Statistics** | Core Foundations | Linear Algebra, Multivariate Calculus, Probability, SVD, Eigenvalues |
-| **03** | **Data Engineering** | Data & ML | NumPy, Pandas, Polars, DuckDB, Arrow, Vectorized Analytics |
-| **04** | **Data Visualization & EDA** | Data & ML | Matplotlib, Seaborn, Plotly, Interactive EDA, Storytelling |
-| **05** | **Classical Machine Learning** | Data & ML | Scikit-Learn, XGBoost, LightGBM, SVM, Ensembles, Cross-Validation |
-| **06** | **Deep Learning Foundations** | Deep & GenAI | PyTorch, Backpropagation, CNNs, ResNet, Loss Functions, Optimizers |
-| **07** | **Sequence Models & NLP** | Deep & GenAI | RNNs, LSTMs, Word2Vec, GloVe, Tokenization, Hugging Face |
-| **08** | **Transformers & Attention** | Deep & GenAI | Self-Attention, Multi-Head Attention, BERT, GPT, Vision Transformers |
-| **09** | **Generative AI & Diffusion** | Deep & GenAI | VAEs, GANs, Stable Diffusion, Score-based Models, LoRA |
-| **10** | **LLMs & Prompt Engineering** | Deep & GenAI | Prompt Patterns, Few-shot, Chain-of-Thought, DSPy, In-Context Learning |
-| **11** | **Retrieval-Augmented Gen (RAG)** | Agentic Systems | Vector DBs (Qdrant, Pinecone, Chroma), Hybrid Search, Re-ranking |
-| **12** | **Agentic AI & Tool Calling** | Agentic Systems | LangGraph, CrewAI, AutoGen, ReAct Loop, Function Calling |
-| **13** | **Fine-Tuning & Quantization** | Agentic Systems | PEFT, QLoRA, Axolotl, Unsloth, GGUF, AWQ, DeepSpeed |
-| **14** | **AI Safety, Alignment & RLHF** | Agentic Systems | RLHF, DPO, PPO, Red-Teaming, Prompt Injection Defense, Guardrails |
-| **15** | **Computer Vision Advanced** | Production | YOLOv11, Segment Anything (SAM), CLIP, NeRF, 3D Vision |
-| **16** | **Audio & Speech AI** | Production | Whisper, Kokoro, TTS/STT, Wav2Vec, Audio Transformers |
-| **17** | **LLM Inference Optimization** | MLOps & Cloud | vLLM, TensorRT-LLM, Ollama, SGLang, PagedAttention, KV Caching |
-| **18** | **MLOps & Production AI** | MLOps & Cloud | Docker, Kubernetes, Triton Server, MLflow, Weights & Biases, Prometheus |
+| **02** | **Git & GitHub** | Core Foundations | Git Internals, DAG, Branching, Rebase, Reflog, PRs, GitHub Actions CI/CD, Git LFS |
+| **03** | **Data Analysis** | High-Performance Data | NumPy Vectorization, Pandas, Polars, Arrow-backed Computing, Matplotlib, Plotly |
+| **04** | **Frontend/Backend** | Core Foundations | FastAPI, SSE Token Streaming, WebSockets, Streamlit, React UI, Tailwind CSS |
+| **05** | **Mathematics & Statistics** | Core Foundations | Linear Algebra, Multivariate Calculus, Probability, SVD, Eigenvalues, Optimization |
+| **06** | **SQL/Databases** | Data & ML | PostgreSQL, pgvector, Vector Indexing (HNSW, IVFFlat), SQLite, ORMs |
+| **07** | **EDA/Feature Engineering** | Data & ML | Handling Missing Values, Outliers, Feature Scaling, Encoding, Feature-engine |
+| **08** | **Machine Learning (ML)** | Data & ML | Scikit-Learn, XGBoost, LightGBM, Random Forests, Optuna, Hyperparameter Tuning |
+| **09** | **Deep Learning (DL)** | Deep & GenAI | PyTorch, Backpropagation, CNNs, ResNet, Loss Functions, Weights & Biases |
+| **10** | **NLP** | Deep & GenAI | spaCy, Tokenizers, Word2Vec, N-Grams, Text Classification, TF-IDF |
+| **11** | **Computer Vision** | Deep & GenAI | OpenCV, Ultralytics YOLO, Object Detection, Segmentation, Timm |
+| **12** | **LLMs/Transformers** | Deep & GenAI | Hugging Face Transformers, Multi-Head Attention, FlashAttention, vLLM |
+| **13** | **GenAI** | Deep & GenAI | Stable Diffusion, Hugging Face Diffusers, ComfyUI, Latent Diffusion |
+| **14** | **Prompt Engineering/Fine-Tuning** | Deep & GenAI | Unsloth, PEFT, LoRA/QLoRA, TRL, SFT, DPO, Prompt Patterns |
+| **15** | **RAG** | Agentic Systems | LlamaIndex, LangChain, Vector DBs, Hybrid Search, Re-ranking, Ragas |
+| **16** | **Agentic AI** | Agentic Systems | LangGraph, CrewAI, Tool Calling, ReAct Agent Loops, E2B Sandboxes |
+| **17** | **MCP/Protocols** | Agentic Systems | Model Context Protocol (MCP), FastMCP, JSON-RPC, Tool Integration |
+| **18** | **AI Security** | MLOps & Cloud | Guardrails AI, NeMo Guardrails, Garak Red Teaming, Prompt Injection Defense, Presidio |
+| **19** | **MLOps/LLMOps/AgentOps/AIOps** | MLOps & Cloud | MLflow, LangSmith, Phoenix Tracing, DVC Pipelines, Drift Detection |
+| **20** | **Cloud & Production AI** | MLOps & Cloud | Kubernetes, NVIDIA Triton, vLLM, PagedAttention, Ray Serve, AWS/GCP |
 
 ---
 
@@ -184,7 +186,7 @@ SageMap/
 │   ├── contexts/
 │   │   └── AuthContext.tsx  # Role-based Supabase authentication
 │   ├── data/
-│   │   └── roadmapData.ts   # 18-step master curriculum definitions
+│   │   └── roadmapData.ts   # 20-step master curriculum definitions
 │   ├── lib/
 │   │   └── supabase.ts      # Supabase client & dynamic redirect URLs
 │   ├── services/

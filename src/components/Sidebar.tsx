@@ -48,7 +48,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <div className="flex items-center gap-2">
             <Compass className="w-4 h-4 text-cyan-400" />
             <h2 className="text-xs font-black uppercase tracking-wider text-slate-300">
-              Curriculum Steps (1-19)
+              Curriculum Steps (1-{ROADMAP_TOPICS.length})
             </h2>
           </div>
         ) : (

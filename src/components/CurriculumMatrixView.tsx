@@ -61,7 +61,7 @@ export const CurriculumMatrixView: React.FC<CurriculumMatrixViewProps> = ({
               Data Science to Agentic AI Curriculum
             </h2>
             <p className="text-xs text-slate-400 mt-1 max-w-xl">
-              Comparative matrix view across all 10 specialization modules, learning pathways, and resource distributions.
+              Comparative matrix view across all {topics.length} specialization steps, learning pathways, and resource distributions.
             </p>
           </div>
 
