@@ -20,6 +20,7 @@ import {
 import { ROADMAP_TOPICS } from '../data/roadmapData';
 import { ResourceItem, ResourceType, DifficultyLevel, RoadmapTopic } from '../types';
 import { ResourceCard } from './ResourceCard';
+import { UdemyLogo } from './UdemyLogo';
 
 interface ResourceExplorerViewProps {
   topics?: RoadmapTopic[];
@@ -189,7 +190,7 @@ export const ResourceExplorerView: React.FC<ResourceExplorerViewProps> = ({
               { id: 'all', label: 'All Categories', icon: <Sparkles className="w-3.5 h-3.5" /> },
               { id: 'youtube', label: 'YouTube Videos', icon: <Tv className="w-3.5 h-3.5 text-red-400" /> },
               { id: 'github', label: 'GitHub Repos', icon: <Github className="w-3.5 h-3.5 text-emerald-400" /> },
-              { id: 'course', label: 'Courses', icon: <GraduationCap className="w-3.5 h-3.5 text-purple-400" /> },
+              { id: 'course', label: 'Udemy Courses', icon: <UdemyLogo className="w-3.5 h-3.5 text-purple-400" /> },
               { id: 'project', label: 'Projects', icon: <Code2 className="w-3.5 h-3.5 text-amber-400" /> },
               { id: 'documentation', label: 'Docs', icon: <Globe className="w-3.5 h-3.5 text-blue-400" /> },
               { id: 'paper', label: 'Research Papers', icon: <FileText className="w-3.5 h-3.5 text-teal-400" /> },

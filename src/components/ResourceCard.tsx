@@ -19,6 +19,7 @@ import {
   Edit3,
   Trash2
 } from 'lucide-react';
+import { UdemyLogo } from './UdemyLogo';
 import { ResourceItem, ResourceType } from '../types';
 
 interface ResourceCardProps {
@@ -58,8 +59,8 @@ export const ResourceCard: React.FC<ResourceCardProps> = ({
         };
       case 'course':
         return {
-          icon: <GraduationCap className="w-3.5 h-3.5 text-purple-400 shrink-0" />,
-          label: resource.platform || 'Course',
+          icon: <UdemyLogo className="w-3.5 h-3.5 text-purple-400 shrink-0" />,
+          label: 'Udemy Course',
           border: 'border-purple-500/30',
           bg: 'bg-purple-500/10 text-purple-300',
           glow: 'group-hover:border-purple-500/60'

@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import { RoadmapTopic, ResourceType, ResourceItem } from '../types';
 import { ResourceCard } from './ResourceCard';
+import { UdemyLogo } from './UdemyLogo';
 
 interface TopicDashboardProps {
   topic: RoadmapTopic | null;
@@ -295,8 +296,8 @@ export const TopicDashboard: React.FC<TopicDashboardProps> = ({
                     : 'bg-slate-900 text-slate-400 hover:text-purple-300 border border-slate-800'
                 }`}
               >
-                <GraduationCap className="w-3.5 h-3.5 text-purple-400" />
-                <span>Courses</span>
+                <UdemyLogo className="w-3.5 h-3.5 text-purple-400" />
+                <span>Udemy Courses</span>
               </button>
 
               <button

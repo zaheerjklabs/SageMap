@@ -15,7 +15,8 @@ import {
   Bookmark
 } from 'lucide-react';
 import { ROADMAP_TOPICS } from '../data/roadmapData';
-import { RoadmapTopic, ResourceType } from '../types';
+import { RoadmapTopic, UserCollections } from '../types';
+import { UdemyLogo } from './UdemyLogo';
 
 interface CurriculumMatrixViewProps {
   topics?: RoadmapTopic[];
@@ -143,9 +144,9 @@ export const CurriculumMatrixView: React.FC<CurriculumMatrixViewProps> = ({
                     </div>
 
                     <div className="p-2 rounded-xl bg-purple-500/10 border border-purple-500/30 text-purple-300">
-                      <GraduationCap className="w-3.5 h-3.5 mx-auto mb-1 text-purple-400" />
+                      <UdemyLogo className="w-3.5 h-3.5 mx-auto mb-1 text-purple-400" />
                       <div>{courseCount}</div>
-                      <div className="text-[9px] text-slate-400 font-sans">Courses</div>
+                      <div className="text-[9px] text-slate-400 font-sans">Udemy</div>
                     </div>
 
                     <div className="p-2 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300">

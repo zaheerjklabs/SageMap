@@ -114,7 +114,7 @@ export const ResourceModal: React.FC<ResourceModalProps> = ({
       isEdited: isEdit ? true : undefined,
       ...(type === 'youtube' && { channelName: channelOrAuthor, duration: durationOrStars }),
       ...(type === 'github' && { author: channelOrAuthor, stars: durationOrStars }),
-      ...(type === 'course' && { instructor: channelOrAuthor, platform: editingResource?.platform || 'Udemy' }),
+      ...(type === 'course' && { instructor: channelOrAuthor, platform: 'Udemy' }),
       ...(type === 'paper' && { authors: channelOrAuthor, year: durationOrStars, venue: editingResource?.venue || 'arXiv' }),
       ...(type === 'book' && { bookAuthor: channelOrAuthor, bookYear: durationOrStars }),
       ...(type === 'documentation' && { siteName: channelOrAuthor }),

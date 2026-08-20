@@ -19,6 +19,8 @@ import {
   EyeOff
 } from 'lucide-react';
 import { RoadmapTopic, ResourceItem } from '../types';
+import { ResourceCard } from './ResourceCard';
+import { UdemyLogo } from './UdemyLogo';
 import { CategoryRootNode } from './CategoryRootNode';
 
 interface StepNodeProps {
@@ -168,8 +170,8 @@ export const StepNode: React.FC<StepNodeProps> = ({
           {courseResources.length > 0 && (
             <div className="px-2.5 py-1.5 rounded-xl bg-purple-500/15 border border-purple-500/30 text-purple-300 flex items-center justify-between">
               <span className="flex items-center gap-1.5">
-                <GraduationCap className="w-3.5 h-3.5 text-purple-400" />
-                <span className="text-[11px]">Courses</span>
+                <UdemyLogo className="w-3.5 h-3.5 text-purple-400" />
+                <span className="text-[11px]">Udemy</span>
               </span>
               <span className="font-bold">{courseResources.length}</span>
             </div>
