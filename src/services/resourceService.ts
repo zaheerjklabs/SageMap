@@ -128,22 +128,25 @@ export async function upsertResource(
   // If resource was previously in deletedIds, un-delete it in metadata
   if (existingDeletedIds.includes(resource.id)) {
     const updatedDeleted = existingDeletedIds.filter((id) => id !== resource.id);
-    await supabase
-      .from('resources')
-      .upsert(
-        {
-          id: METADATA_ROW_ID,
-          topic_id: 0,
-          data: {
-            isInitialized: true,
-            deletedResourceIds: updatedDeleted,
-            lastSyncedAt: new Date().toISOString()
-          } as any,
-          updated_at: new Date().toISOString()
-        },
-        { onConflict: 'id' }
-      )
-      .catch((e) => console.warn('Metadata update error:', e));
+    try {
+      await supabase
+        .from('resources')
+        .upsert(
+          {
+            id: METADATA_ROW_ID,
+            topic_id: 0,
+            data: {
+              isInitialized: true,
+              deletedResourceIds: updatedDeleted,
+              lastSyncedAt: new Date().toISOString()
+            } as any,
+            updated_at: new Date().toISOString()
+          },
+          { onConflict: 'id' }
+        );
+    } catch (e) {
+      console.warn('Metadata update error:', e);
+    }
   }
 
   return rowToResource(data as DbResourceRow);

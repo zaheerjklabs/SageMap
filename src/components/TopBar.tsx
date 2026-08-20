@@ -14,6 +14,7 @@ import {
   LogOut,
   ShieldCheck,
   CloudUpload,
+  CloudDownload,
   Loader2
 } from 'lucide-react';
 import { ROADMAP_TOPICS, CATEGORY_DEFINITIONS } from '../data/roadmapData';
@@ -38,6 +39,8 @@ interface TopBarProps {
   onLogoutClick: () => void;
   onSyncDb?: () => Promise<void>;
   isSyncing?: boolean;
+  onFetchDb?: () => Promise<void>;
+  isFetching?: boolean;
 }
 
 export const TopBar: React.FC<TopBarProps> = ({
@@ -58,7 +61,9 @@ export const TopBar: React.FC<TopBarProps> = ({
   onLoginClick,
   onLogoutClick,
   onSyncDb,
-  isSyncing = false
+  isSyncing = false,
+  onFetchDb,
+  isFetching = false
 }) => {
   const [showPathfinder, setShowPathfinder] = useState(false);
   const [showCategoryMenu, setShowCategoryMenu] = useState(false);
@@ -227,6 +232,23 @@ export const TopBar: React.FC<TopBarProps> = ({
             <span className="hidden sm:inline">Explorer</span>
           </button>
         </div>
+
+        {/* Fetch Data from Supabase Button (Available for all users / admins) */}
+        {onFetchDb && (
+          <button
+            onClick={onFetchDb}
+            disabled={isFetching}
+            className="flex px-2.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 disabled:opacity-60 border border-cyan-500/30 hover:border-cyan-400/60 text-xs font-bold text-cyan-300 items-center gap-1.5 transition-all shadow-sm shrink-0 whitespace-nowrap"
+            title="Fetch latest learning resources directly from Supabase"
+          >
+            {isFetching ? (
+              <Loader2 className="w-3.5 h-3.5 text-cyan-400 animate-spin shrink-0" />
+            ) : (
+              <CloudDownload className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+            )}
+            <span>{isFetching ? 'Fetching...' : 'Fetch Supabase'}</span>
+          </button>
+        )}
 
         {/* Admin action buttons */}
         {isAdmin && (

@@ -58,6 +58,7 @@ export default function App() {
   const [isDbInitialized, setIsDbInitialized] = useState<boolean>(false);
   const [resourcesLoading, setResourcesLoading] = useState(true);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [isFetching, setIsFetching] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const [collections, setCollections] = useState<UserCollections>(() => loadCollectionsFromStorage());
@@ -240,6 +241,19 @@ export default function App() {
     setIsDeleteModalOpen(false);
   };
 
+  const handleFetchDb = async () => {
+    setIsFetching(true);
+    try {
+      const result = await refreshResources();
+      showToast(`Fetched ${result.resources.length} learning resources from Supabase!`);
+    } catch (err) {
+      console.error('Failed to fetch from Supabase:', err);
+      showToast('Failed to fetch resources from Supabase.');
+    } finally {
+      setIsFetching(false);
+    }
+  };
+
   const handleSyncAll = async () => {
     if (!isAdmin) return;
     setIsSyncing(true);
@@ -314,6 +328,8 @@ export default function App() {
         onLogoutClick={signOut}
         onSyncDb={handleSyncAll}
         isSyncing={isSyncing}
+        onFetchDb={handleFetchDb}
+        isFetching={isFetching}
       />
 
       {toastMessage && (
