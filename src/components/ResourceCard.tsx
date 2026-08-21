@@ -29,23 +29,29 @@ interface ResourceCardProps {
 }
 
 export const getResourceThumbnail = (resource: ResourceItem): string => {
+  // 1. GitHub OpenGraph Social Preview Thumbnail (Strictly for GitHub type resources)
+  if (resource.type === 'github') {
+    const url = resource.url || '';
+    const ghMatch = url.match(/github\.com\/([^\/]+)\/([^\/]+)/);
+    if (ghMatch && ghMatch[1] && ghMatch[2]) {
+      const owner = ghMatch[1];
+      const repo = ghMatch[2].replace(/\.git$/, '').split('#')[0].split('?')[0];
+      return `https://opengraph.githubassets.com/1/${owner}/${repo}`;
+    }
+    if (resource.imageUrl && resource.imageUrl.includes('githubassets.com')) return resource.imageUrl;
+    if (resource.thumbnailUrl && resource.thumbnailUrl.includes('githubassets.com')) return resource.thumbnailUrl;
+    return 'https://opengraph.githubassets.com/1/github/github';
+  }
+
   if (resource.imageUrl) return resource.imageUrl;
   if (resource.thumbnailUrl) return resource.thumbnailUrl;
 
   const url = resource.url || '';
 
-  // 1. YouTube Thumbnail Extraction (HQ standard thumbnail)
+  // 2. YouTube Thumbnail Extraction (HQ standard thumbnail)
   const ytMatch = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|v\/|shorts\/))([\w-]{11})/);
   if (ytMatch && ytMatch[1]) {
     return `https://img.youtube.com/vi/${ytMatch[1]}/hqdefault.jpg`;
-  }
-
-  // 2. GitHub OpenGraph Social Preview Thumbnail
-  const ghMatch = url.match(/github\.com\/([^\/]+)\/([^\/]+)/);
-  if (ghMatch && ghMatch[1] && ghMatch[2]) {
-    const owner = ghMatch[1];
-    const repo = ghMatch[2].replace(/\.git$/, '').split('#')[0].split('?')[0];
-    return `https://opengraph.githubassets.com/1/${owner}/${repo}`;
   }
 
   // 3. Udemy Course Thumbnail Extraction via OpenGraph API
@@ -53,7 +59,7 @@ export const getResourceThumbnail = (resource: ResourceItem): string => {
     return `https://api.microlink.io/?url=${encodeURIComponent(url)}&embed=image.url`;
   }
 
-  // 4. High Quality Domain & Topic Based Unsplash Cover Imagery
+  // 4. High Quality Domain & Topic Based Unsplash Cover Imagery for Projects, Courses, Books, etc.
   const lowerUrl = url.toLowerCase();
   const lowerTitle = resource.title.toLowerCase();
 
@@ -207,7 +213,9 @@ export const ResourceCard: React.FC<ResourceCardProps> = ({
           src={thumbnailUrl}
           alt={resource.title}
           onError={(e) => {
-            (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=800&auto=format&fit=crop';
+            (e.target as HTMLImageElement).src = resource.type === 'github'
+              ? 'https://opengraph.githubassets.com/1/github/github'
+              : 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=800&auto=format&fit=crop';
           }}
           className="w-full h-full object-contain group-hover:scale-102 transition-transform duration-300 ease-out"
         />
