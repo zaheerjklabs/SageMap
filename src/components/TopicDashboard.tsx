@@ -21,7 +21,9 @@ import {
   Plus, 
   Share2,
   FileCode2,
-  Edit3
+  Edit3,
+  Bot,
+  Brain
 } from 'lucide-react';
 import { RoadmapTopic, ResourceType, ResourceItem } from '../types';
 import { ResourceCard } from './ResourceCard';
@@ -39,6 +41,8 @@ interface TopicDashboardProps {
   onSaveNote: (topicId: number, note: string) => void;
   onSelectTopic: (topicId: number) => void;
   onAddCustomResourceClick?: (topicId: number) => void;
+  onOpenSageAi?: (topicId: number) => void;
+  onOpenQuiz?: (topicId: number) => void;
 }
 
 type TabType = 'all' | 'youtube' | 'github' | 'course' | 'project' | 'documentation' | 'paper' | 'book' | 'article' | 'interview' | 'tools';
@@ -54,7 +58,9 @@ export const TopicDashboard: React.FC<TopicDashboardProps> = ({
   topicNote,
   onSaveNote,
   onSelectTopic,
-  onAddCustomResourceClick
+  onAddCustomResourceClick,
+  onOpenSageAi,
+  onOpenQuiz
 }) => {
   const [activeTab, setActiveTab] = useState<TabType>('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -117,6 +123,28 @@ export const TopicDashboard: React.FC<TopicDashboardProps> = ({
             </div>
 
             <div className="flex items-center gap-2">
+              {onOpenSageAi && (
+                <button
+                  onClick={() => onOpenSageAi(topic.id)}
+                  className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-500/20 via-yellow-500/20 to-indigo-500/20 hover:from-amber-500/30 hover:to-indigo-500/30 border border-amber-500/40 text-xs font-bold text-amber-300 flex items-center gap-1.5 transition-all shadow-md"
+                  title="Ask SageAI Tutor about this step"
+                >
+                  <Bot className="w-4 h-4 text-amber-400" />
+                  <span className="hidden sm:inline font-black">SageAI</span>
+                </button>
+              )}
+
+              {onOpenQuiz && (
+                <button
+                  onClick={() => onOpenQuiz(topic.id)}
+                  className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-indigo-500/40 text-xs font-bold text-indigo-300 flex items-center gap-1.5 transition-colors shadow-sm"
+                  title="Take Quiz & Flashcards for this step"
+                >
+                  <Brain className="w-4 h-4 text-indigo-400" />
+                  <span className="hidden sm:inline">Quiz</span>
+                </button>
+              )}
+
               {onAddCustomResourceClick && (
                 <button
                   onClick={() => onAddCustomResourceClick(topic.id)}

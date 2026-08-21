@@ -26,6 +26,8 @@ import { TopicDashboard } from './components/TopicDashboard';
 import { ResourceModal } from './components/ResourceModal';
 import { DeleteConfirmModal } from './components/DeleteConfirmModal';
 import { AuthModal } from './components/AuthModal';
+import { SageAITutorDrawer } from './components/SageAITutorDrawer';
+import { QuizFlashcardModal } from './components/QuizFlashcardModal';
 
 export default function App() {
   const { isAdmin, isLoading: authLoading, signIn, signUp, signOut, user, isPasswordRecovery } = useAuth();
@@ -37,6 +39,9 @@ export default function App() {
   const [viewMode, setViewMode] = useState<ViewMode>('canvas');
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(true);
   const [dashboardTopicId, setDashboardTopicId] = useState<number | null>(null);
+
+  const [isSageAiOpen, setIsSageAiOpen] = useState<boolean>(false);
+  const [isQuizModalOpen, setIsQuizModalOpen] = useState<boolean>(false);
 
   const [isResourceModalOpen, setIsResourceModalOpen] = useState<boolean>(false);
   const [resourceModalTopicId, setResourceModalTopicId] = useState<number>(1);
@@ -330,6 +335,8 @@ export default function App() {
         isSyncing={isSyncing}
         onFetchDb={handleFetchDb}
         isFetching={isFetching}
+        onOpenSageAi={() => setIsSageAiOpen(true)}
+        onOpenQuiz={() => setIsQuizModalOpen(true)}
       />
 
       {toastMessage && (
@@ -404,6 +411,30 @@ export default function App() {
         onSaveNote={handleSaveNote}
         onSelectTopic={handleSelectTopic}
         onAddCustomResourceClick={isAdmin ? handleOpenAddResourceModal : undefined}
+        onOpenSageAi={(id) => {
+          setCurrentTopicId(id);
+          setIsSageAiOpen(true);
+        }}
+        onOpenQuiz={(id) => {
+          setCurrentTopicId(id);
+          setIsQuizModalOpen(true);
+        }}
+      />
+
+      <SageAITutorDrawer
+        isOpen={isSageAiOpen}
+        onClose={() => setIsSageAiOpen(false)}
+        topic={resolvedTopics.find((t) => t.id === currentTopicId) || resolvedTopics[0]}
+        topics={resolvedTopics}
+        onSelectTopic={handleSelectTopic}
+      />
+
+      <QuizFlashcardModal
+        isOpen={isQuizModalOpen}
+        onClose={() => setIsQuizModalOpen(false)}
+        topic={resolvedTopics.find((t) => t.id === currentTopicId) || resolvedTopics[0]}
+        topics={resolvedTopics}
+        onSelectTopic={handleSelectTopic}
       />
 
       {isAdmin && (

@@ -105,6 +105,9 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
     const containerWidth = containerRef.current.clientWidth;
     const containerHeight = containerRef.current.clientHeight;
 
+    // Do NOT update transform if container dimensions are not measured yet (0)
+    if (containerWidth <= 0 || containerHeight <= 0) return;
+
     const targetScale = 0.85;
     const newX = (containerWidth / 2) - (node.x * targetScale);
     const newY = (containerHeight / 3) - (node.y * targetScale);
@@ -116,12 +119,28 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
     });
   }, []);
 
-  // Center on topic when currentTopicId changes
+  // Center on topic when currentTopicId changes or when container resizes
   useEffect(() => {
     const frameId = requestAnimationFrame(() => {
       centerOnTopic(currentTopicId);
     });
     return () => cancelAnimationFrame(frameId);
+  }, [currentTopicId, centerOnTopic]);
+
+  // ResizeObserver to re-center when DOM container dimensions become non-zero on mount
+  useEffect(() => {
+    if (!containerRef.current) return;
+
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        if (entry.contentRect.width > 0 && entry.contentRect.height > 0) {
+          centerOnTopic(currentTopicId);
+        }
+      }
+    });
+
+    observer.observe(containerRef.current);
+    return () => observer.disconnect();
   }, [currentTopicId, centerOnTopic]);
 
   // Zoom handlers with stepped increments
