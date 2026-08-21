@@ -40,6 +40,7 @@ export function resourceToRow(resource: ResourceItem): DbResourceRow {
 
 /**
  * Fetches all saved resources and system metadata from the Supabase database.
+ * Real active database rows are strictly preserved as source of truth.
  */
 export async function fetchAllResources(): Promise<FetchResourcesResult> {
   if (!isSupabaseConfigured) {
@@ -59,7 +60,7 @@ export async function fetchAllResources(): Promise<FetchResourcesResult> {
   const rows = (data || []) as DbResourceRow[];
   let isInitialized = false;
   let deletedIds: string[] = [];
-  const rawResources: ResourceItem[] = [];
+  const activeDbResources: ResourceItem[] = [];
 
   for (const row of rows) {
     if (row.id === METADATA_ROW_ID) {
@@ -69,22 +70,46 @@ export async function fetchAllResources(): Promise<FetchResourcesResult> {
         deletedIds = meta.deletedResourceIds;
       }
     } else if (!row.id.startsWith('__sagemap_')) {
-      rawResources.push(rowToResource(row));
+      const res = rowToResource(row);
+      if (res && res.title && res.url) {
+        activeDbResources.push(res);
+      }
     }
   }
 
-  // If there are resources in the DB, it has been initialized
-  if (rawResources.length > 0) {
+  if (activeDbResources.length > 0) {
     isInitialized = true;
   }
 
-  // Filter out any explicitly deleted IDs
-  const deletedSet = new Set(deletedIds);
-  const activeResources = rawResources.filter((r) => !deletedSet.has(r.id));
+  // Active DB rows take absolute priority over metadata tombstone list.
+  // If an ID exists in activeDbResources, it MUST NOT be treated as deleted.
+  const dbIdSet = new Set(activeDbResources.map((r) => r.id));
+  const cleanedDeletedIds = deletedIds.filter((id) => !dbIdSet.has(id));
+
+  // If deletedIds contained active DB IDs, clean up metadata in DB in background
+  if (cleanedDeletedIds.length !== deletedIds.length) {
+    supabase
+      .from('resources')
+      .upsert(
+        {
+          id: METADATA_ROW_ID,
+          topic_id: 0,
+          data: {
+            isInitialized: true,
+            deletedResourceIds: cleanedDeletedIds,
+            lastSyncedAt: new Date().toISOString()
+          } as any,
+          updated_at: new Date().toISOString()
+        },
+        { onConflict: 'id' }
+      )
+      .then(() => {})
+      .catch((e) => console.warn('Failed to clean metadata tombstone in DB:', e));
+  }
 
   return {
-    resources: activeResources,
-    deletedIds,
+    resources: activeDbResources,
+    deletedIds: cleanedDeletedIds,
     isInitialized
   };
 }
@@ -125,10 +150,21 @@ export async function upsertResource(
     throw new Error(error.message);
   }
 
-  // If resource was previously in deletedIds, un-delete it in metadata
-  if (existingDeletedIds.includes(resource.id)) {
-    const updatedDeleted = existingDeletedIds.filter((id) => id !== resource.id);
-    try {
+  // Atomically fetch and update DB metadata row to ensure resource.id is removed from deletedResourceIds
+  try {
+    const { data: metaRow } = await supabase
+      .from('resources')
+      .select('data')
+      .eq('id', METADATA_ROW_ID)
+      .maybeSingle();
+
+    let currentDeleted: string[] = existingDeletedIds;
+    if (metaRow?.data && Array.isArray((metaRow.data as any).deletedResourceIds)) {
+      currentDeleted = (metaRow.data as any).deletedResourceIds;
+    }
+
+    if (currentDeleted.includes(resource.id)) {
+      const updatedDeleted = currentDeleted.filter((id) => id !== resource.id);
       await supabase
         .from('resources')
         .upsert(
@@ -144,9 +180,9 @@ export async function upsertResource(
           },
           { onConflict: 'id' }
         );
-    } catch (e) {
-      console.warn('Metadata update error:', e);
     }
+  } catch (metaErr) {
+    console.warn('Atomic metadata update notice:', metaErr);
   }
 
   return rowToResource(data as DbResourceRow);
@@ -174,8 +210,24 @@ export async function deleteResource(
     throw new Error(error.message);
   }
 
-  // 2. Persist deleted ID in system metadata so it never resurrects from static files
-  const updatedDeleted = Array.from(new Set([...existingDeletedIds, resourceId]));
+  // 2. Fetch current DB metadata to append deletion tombstone cleanly
+  let currentDeleted = [...existingDeletedIds];
+  try {
+    const { data: metaRow } = await supabase
+      .from('resources')
+      .select('data')
+      .eq('id', METADATA_ROW_ID)
+      .maybeSingle();
+
+    if (metaRow?.data && Array.isArray((metaRow.data as any).deletedResourceIds)) {
+      currentDeleted = (metaRow.data as any).deletedResourceIds;
+    }
+  } catch (e) {
+    console.warn('Metadata fetch notice on delete:', e);
+  }
+
+  const updatedDeleted = Array.from(new Set([...currentDeleted, resourceId]));
+
   try {
     await supabase
       .from('resources')
@@ -313,6 +365,9 @@ export async function pushWebsiteStateToSupabase(
       }
     }
 
+    const activeIds = new Set(activeResources.map((r) => r.id));
+    const cleanedDeleted = allDeleted.filter((id) => !activeIds.has(id));
+
     // 2. Upsert the current active resources from the website to Supabase
     if (activeResources.length > 0) {
       await syncAllResourcesToSupabase(activeResources);
@@ -327,7 +382,7 @@ export async function pushWebsiteStateToSupabase(
           topic_id: 0,
           data: {
             isInitialized: true,
-            deletedResourceIds: allDeleted,
+            deletedResourceIds: cleanedDeleted,
             lastSyncedAt: new Date().toISOString()
           } as any,
           updated_at: new Date().toISOString()

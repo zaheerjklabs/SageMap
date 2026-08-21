@@ -45,47 +45,69 @@ export function calculateTopicDimensions(
   isDirectionLR: boolean = false
 ): { width: number; height: number } {
   const baseCardWidth = 480;
-  const baseCardHeight = 240;
+  const baseCardHeight = 260;
 
-  if (!isExpanded) {
+  if (!isExpanded || !topic.resources || topic.resources.length === 0) {
     return { width: baseCardWidth, height: baseCardHeight };
   }
 
-  // Count active categories
-  const categories = [
-    topic.resources.filter(r => r.type === 'youtube').length > 0,
-    topic.resources.filter(r => r.type === 'github').length > 0,
-    topic.resources.filter(r => r.type === 'course').length > 0,
-    topic.resources.filter(r => r.type === 'project').length > 0,
-    topic.resources.filter(r => r.type === 'documentation').length > 0,
-    topic.resources.filter(r => r.type === 'paper').length > 0,
-    topic.resources.filter(r => r.type === 'book').length > 0,
-  ].filter(Boolean).length;
+  // Count resources for each category type
+  const categoryTypes = [
+    'youtube',
+    'github',
+    'course',
+    'project',
+    'documentation',
+    'paper',
+    'book',
+    'article'
+  ] as const;
 
-  if (categories === 0) {
+  const activeCategoryHeights: number[] = [];
+
+  categoryTypes.forEach((type) => {
+    const count = topic.resources.filter((r) => r.type === type).length;
+    if (count > 0) {
+      // Category node header ~52px + container padding ~16px + resource card list (max 380px)
+      const resourceListHeight = Math.min(380, count * 92);
+      const categoryNodeHeight = 52 + 16 + resourceListHeight;
+      activeCategoryHeights.push(categoryNodeHeight);
+    }
+  });
+
+  const numCategories = activeCategoryHeights.length;
+  if (numCategories === 0) {
     return { width: baseCardWidth, height: baseCardHeight };
   }
 
-  // Width expands to accommodate category cards grid (up to 1080px)
+  // Width expands based on column layout (320px column + 16px gap, up to 3 columns per row)
   let childWidth = 480;
-  let childHeight = 440;
-
-  if (categories <= 2) {
-    childWidth = Math.max(480, categories * 340);
-    childHeight = 440;
-  } else if (categories <= 4) {
-    childWidth = Math.min(1080, Math.max(720, categories * 330));
-    childHeight = 540;
-  } else if (categories <= 6) {
-    childWidth = 1080;
-    childHeight = 880;
+  if (numCategories === 1) {
+    childWidth = 480;
+  } else if (numCategories === 2) {
+    childWidth = 680;
   } else {
     childWidth = 1080;
-    childHeight = 1200;
+  }
+
+  // Calculate row wrapping height (up to 3 columns per row in flex container)
+  const colsPerRow = 3;
+  const numRows = Math.ceil(numCategories / colsPerRow);
+  let childHeight = 0;
+
+  for (let r = 0; r < numRows; r++) {
+    const rowCategoryHeights = activeCategoryHeights.slice(r * colsPerRow, (r + 1) * colsPerRow);
+    const rowMaxHeight = Math.max(...rowCategoryHeights, 0);
+    childHeight += rowMaxHeight;
+  }
+
+  // Add gaps between rows (16px between rows)
+  if (numRows > 1) {
+    childHeight += (numRows - 1) * 16;
   }
 
   const totalWidth = Math.max(baseCardWidth, childWidth);
-  const totalHeight = baseCardHeight + 40 + childHeight; // 40px gap & connection stem
+  const totalHeight = baseCardHeight + 40 + childHeight; // 40px stem gap
 
   return { width: totalWidth, height: totalHeight };
 }

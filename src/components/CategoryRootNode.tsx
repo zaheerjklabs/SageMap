@@ -171,7 +171,7 @@ export const CategoryRootNode: React.FC<CategoryRootNodeProps> = ({
 
       {/* Branching Leaf Nodes */}
       {isExpanded && (
-        <div className="mt-2.5 pl-3 border-l-2 border-slate-800 space-y-2.5 relative">
+        <div className="mt-2.5 pl-3 border-l-2 border-slate-800 space-y-2.5 relative max-h-[380px] overflow-y-auto custom-scrollbar pr-1">
           {resources.map((res) => {
             const isSaved = !!savedResources[res.id];
 

@@ -73,22 +73,22 @@ export function mergeTopicsWithDbResources(
     return Boolean(deletedResourceIds[id]);
   };
 
-  // Map of DB resources by resource ID
+  // Map of active DB resources by resource ID
   const dbById = new Map<string, ResourceItem>();
   for (const res of dbResources) {
-    if ((res as any).isDeleted || (res as any).deleted || isDeletedId(res.id)) {
+    if ((res as any).isDeleted || (res as any).deleted) {
       continue;
     }
     dbById.set(res.id, res);
   }
 
-  // Set of all static resource IDs across all topics
+  // Set of all static resource IDs across all default roadmap topics
   const staticResourceIds = new Set(topics.flatMap((t) => t.resources.map((r) => r.id)));
 
-  // Collect custom (non-static) DB resources grouped by topicId
+  // Group custom (non-static) DB resources by topicId
   const customDbByTopic = new Map<number, ResourceItem[]>();
   for (const res of dbResources) {
-    if ((res as any).isDeleted || (res as any).deleted || isDeletedId(res.id)) {
+    if ((res as any).isDeleted || (res as any).deleted) {
       continue;
     }
     if (!staticResourceIds.has(res.id)) {
@@ -100,21 +100,19 @@ export function mergeTopicsWithDbResources(
 
   return topics.map((topic) => {
     // 1. Process static resources for this topic:
-    //    Use edited version from DB if available, unless deleted
+    //    If DB row exists, use DB row (edited version).
+    //    If DB row does not exist, check if static resource was deleted via tombstone list.
     const resolvedStatic: ResourceItem[] = [];
     for (const staticRes of topic.resources) {
-      if (isDeletedId(staticRes.id)) {
-        continue;
-      }
       const fromDb = dbById.get(staticRes.id);
       if (fromDb) {
         resolvedStatic.push({ ...fromDb, isEdited: true });
-      } else {
+      } else if (!isDeletedId(staticRes.id)) {
         resolvedStatic.push(staticRes);
       }
     }
 
-    // 2. Append any custom resources added via DB for this topic
+    // 2. Append all custom resources added via DB for this topic
     const customForTopic = customDbByTopic.get(topic.id) || [];
     const allTopicResources = [...resolvedStatic, ...customForTopic];
 
