@@ -168,47 +168,44 @@ export const ResourceCard: React.FC<ResourceCardProps> = ({
         compact ? 'p-0' : 'p-0'
       }`}
     >
-      {/* Top Banner Image with Auto-Fetched Thumbnail */}
-      <div className={`relative w-full overflow-hidden bg-slate-950 border-b border-slate-800/80 ${compact ? 'h-32' : 'h-44'}`}>
+      {/* Top Header Badge Row (No overlapping image text!) */}
+      <div className="px-3.5 py-2.5 bg-slate-950/90 border-b border-slate-800/80 flex items-center justify-between gap-2 flex-wrap">
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-extrabold uppercase tracking-wider ${badge.bg} border ${badge.border}`}>
+            {badge.icon}
+            <span className="truncate max-w-[140px]">{badge.label}</span>
+          </span>
+
+          {resource.isCustom && (
+            <span className="px-2 py-0.5 rounded-lg text-[9px] font-mono font-bold bg-cyan-950/80 text-cyan-300 border border-cyan-500/40">
+              Custom
+            </span>
+          )}
+
+          {resource.isEdited && !resource.isCustom && (
+            <span className="px-2 py-0.5 rounded-lg text-[9px] font-mono font-bold bg-amber-950/80 text-amber-300 border border-amber-500/40">
+              Edited
+            </span>
+          )}
+        </div>
+
+        {resource.difficulty && (
+          <span className="px-2 py-0.5 rounded-lg text-[10px] font-mono font-bold uppercase tracking-wider bg-slate-900 text-amber-300 border border-slate-700/80">
+            {resource.difficulty}
+          </span>
+        )}
+      </div>
+
+      {/* 100% Completely Visible Image Banner (Zero Cropping!) */}
+      <div className="relative w-full aspect-video bg-[#05070B] border-b border-slate-800/80 flex items-center justify-center overflow-hidden">
         <img
           src={thumbnailUrl}
           alt={resource.title}
           onError={(e) => {
             (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=800&auto=format&fit=crop';
           }}
-          className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500 ease-out"
+          className="w-full h-full object-contain group-hover:scale-102 transition-transform duration-300 ease-out"
         />
-        {/* Dark overlay gradient for readable contrast */}
-        <div className="absolute inset-0 bg-gradient-to-t from-[#0D1117] via-transparent to-black/40" />
-
-        {/* Category Badge Overlay (Top Left) */}
-        <div className="absolute top-3 left-3 flex items-center gap-1.5 flex-wrap">
-          <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-extrabold uppercase tracking-wider backdrop-blur-md shadow-lg ${badge.bg} border ${badge.border}`}>
-            {badge.icon}
-            <span className="truncate max-w-[130px]">{badge.label}</span>
-          </span>
-
-          {resource.isCustom && (
-            <span className="px-2 py-1 rounded-lg text-[9px] font-mono font-bold bg-cyan-950/80 text-cyan-300 border border-cyan-500/40 backdrop-blur-md shadow-lg">
-              Custom
-            </span>
-          )}
-
-          {resource.isEdited && !resource.isCustom && (
-            <span className="px-2 py-1 rounded-lg text-[9px] font-mono font-bold bg-amber-950/80 text-amber-300 border border-amber-500/40 backdrop-blur-md shadow-lg">
-              Edited
-            </span>
-          )}
-        </div>
-
-        {/* Difficulty Badge Overlay (Top Right) */}
-        {resource.difficulty && (
-          <div className="absolute top-3 right-3">
-            <span className="px-2.5 py-1 rounded-lg text-[10px] font-mono font-bold uppercase tracking-wider bg-slate-950/85 text-amber-300 border border-slate-700/80 backdrop-blur-md shadow-lg">
-              {resource.difficulty}
-            </span>
-          </div>
-        )}
       </div>
 
       {/* Card Content Body */}
