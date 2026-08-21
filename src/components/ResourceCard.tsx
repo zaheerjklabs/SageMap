@@ -28,11 +28,33 @@ interface ResourceCardProps {
   compact?: boolean;
 }
 
+export const GITHUB_LOGO_THUMBNAIL = `data:image/svg+xml;utf8,${encodeURIComponent(`
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 225" width="100%" height="100%">
+  <defs>
+    <linearGradient id="gh-bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0A1128"/>
+      <stop offset="100%" stop-color="#030712"/>
+    </linearGradient>
+  </defs>
+  <rect width="400" height="225" fill="url(#gh-bg)"/>
+  <circle cx="200" cy="112.5" r="56" fill="#ffffff"/>
+  <g transform="translate(149.6, 62.1) scale(4.2)">
+    <path fill="#040814" fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/>
+  </g>
+</svg>
+`)}`;
+
 export const getResourceThumbnail = (resource: ResourceItem): string => {
+  const url = resource.url || '';
+  const isGithub = resource.type === 'github' || url.toLowerCase().includes('github.com');
+
+  // For ALL GitHub resources, strictly return the GitHub logo thumbnail
+  if (isGithub) {
+    return GITHUB_LOGO_THUMBNAIL;
+  }
+
   if (resource.imageUrl) return resource.imageUrl;
   if (resource.thumbnailUrl) return resource.thumbnailUrl;
-
-  const url = resource.url || '';
 
   // 1. YouTube Thumbnail Extraction (HQ standard thumbnail)
   const ytMatch = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|v\/|shorts\/))([\w-]{11})/);
@@ -40,20 +62,12 @@ export const getResourceThumbnail = (resource: ResourceItem): string => {
     return `https://img.youtube.com/vi/${ytMatch[1]}/hqdefault.jpg`;
   }
 
-  // 2. GitHub OpenGraph Social Preview Thumbnail
-  const ghMatch = url.match(/github\.com\/([^\/]+)\/([^\/]+)/);
-  if (ghMatch && ghMatch[1] && ghMatch[2]) {
-    const owner = ghMatch[1];
-    const repo = ghMatch[2].replace(/\.git$/, '').split('#')[0].split('?')[0];
-    return `https://opengraph.githubassets.com/1/${owner}/${repo}`;
-  }
-
-  // 3. Udemy Course Thumbnail Extraction via OpenGraph API
+  // 2. Udemy Course Thumbnail Extraction via OpenGraph API
   if (url.includes('udemy.com')) {
     return `https://api.microlink.io/?url=${encodeURIComponent(url)}&embed=image.url`;
   }
 
-  // 4. High Quality Domain & Topic Based Unsplash Cover Imagery
+  // 3. High Quality Domain & Topic Based Unsplash Cover Imagery
   const lowerUrl = url.toLowerCase();
   const lowerTitle = resource.title.toLowerCase();
 
@@ -207,7 +221,11 @@ export const ResourceCard: React.FC<ResourceCardProps> = ({
           src={thumbnailUrl}
           alt={resource.title}
           onError={(e) => {
-            (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=800&auto=format&fit=crop';
+            if (resource.type === 'github' || (resource.url && resource.url.toLowerCase().includes('github.com'))) {
+              (e.target as HTMLImageElement).src = GITHUB_LOGO_THUMBNAIL;
+            } else {
+              (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=800&auto=format&fit=crop';
+            }
           }}
           className="w-full h-full object-contain group-hover:scale-102 transition-transform duration-300 ease-out"
         />
