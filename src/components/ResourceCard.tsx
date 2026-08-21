@@ -175,26 +175,26 @@ export const ResourceCard: React.FC<ResourceCardProps> = ({
 
   return (
     <div
-      className={`group relative rounded-2xl bg-[#0D1117]/95 border ${badge.border} ${badge.glow} transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 flex flex-col justify-between backdrop-blur-md overflow-hidden ${
+      className={`group relative rounded-2xl bg-[#0D1117]/95 border ${badge.border} ${badge.glow} transition-all duration-300 hover:shadow-2xl hover:shadow-amber-500/10 hover:-translate-y-1 flex flex-col justify-between backdrop-blur-xl overflow-hidden ${
         compact ? 'p-0' : 'p-0'
       }`}
     >
       {/* Top Header Badge Row (No overlapping image text!) */}
-      <div className="px-3.5 py-2.5 bg-slate-950/90 border-b border-slate-800/80 flex items-center justify-between gap-2 flex-wrap">
+      <div className="px-3.5 py-2.5 bg-slate-950/95 backdrop-blur-md border-b border-slate-800/80 flex items-center justify-between gap-2 flex-wrap">
         <div className="flex items-center gap-1.5 flex-wrap">
-          <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-extrabold uppercase tracking-wider ${badge.bg} border ${badge.border}`}>
+          <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-extrabold uppercase tracking-wider ${badge.bg} border ${badge.border} shadow-sm`}>
             {badge.icon}
             <span className="truncate max-w-[140px]">{badge.label}</span>
           </span>
 
           {resource.isCustom && (
-            <span className="px-2 py-0.5 rounded-lg text-[9px] font-mono font-bold bg-cyan-950/80 text-cyan-300 border border-cyan-500/40">
+            <span className="px-2 py-0.5 rounded-lg text-[9px] font-mono font-bold bg-cyan-950/80 text-cyan-300 border border-cyan-500/40 shadow-sm">
               Custom
             </span>
           )}
 
           {resource.isEdited && !resource.isCustom && (
-            <span className="px-2 py-0.5 rounded-lg text-[9px] font-mono font-bold bg-amber-950/80 text-amber-300 border border-amber-500/40">
+            <span className="px-2 py-0.5 rounded-lg text-[9px] font-mono font-bold bg-amber-950/80 text-amber-300 border border-amber-500/40 shadow-sm">
               Edited
             </span>
           )}
@@ -217,7 +217,7 @@ export const ResourceCard: React.FC<ResourceCardProps> = ({
               ? 'https://opengraph.githubassets.com/1/github/github'
               : 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=800&auto=format&fit=crop';
           }}
-          className="w-full h-full object-contain group-hover:scale-102 transition-transform duration-300 ease-out"
+          className="w-full h-full object-contain group-hover:scale-[1.03] transition-transform duration-500 ease-out"
         />
       </div>
 

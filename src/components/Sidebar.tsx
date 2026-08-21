@@ -38,26 +38,26 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   return (
     <aside
-      className={`h-full border-r border-slate-800 bg-[#0D1117] transition-all duration-300 flex flex-col z-20 shrink-0 font-sans ${
+      className={`h-full border-r border-slate-800/80 bg-[#0D1117]/90 backdrop-blur-xl transition-all duration-300 flex flex-col z-20 shrink-0 font-sans ${
         isOpen ? 'w-80' : 'w-16'
       }`}
     >
       {/* Sidebar Header */}
-      <div className="h-14 border-b border-slate-800 flex items-center justify-between px-4 shrink-0">
+      <div className="h-14 border-b border-slate-800/80 flex items-center justify-between px-4 shrink-0">
         {isOpen ? (
           <div className="flex items-center gap-2">
-            <Compass className="w-4 h-4 text-cyan-400" />
-            <h2 className="text-xs font-black uppercase tracking-wider text-slate-300">
+            <Compass className="w-4 h-4 text-amber-400" />
+            <h2 className="text-[11px] font-black uppercase tracking-wider text-slate-300 font-heading">
               Curriculum Steps (1-{ROADMAP_TOPICS.length})
             </h2>
           </div>
         ) : (
-          <Compass className="w-5 h-5 text-cyan-400 mx-auto" />
+          <Compass className="w-5 h-5 text-amber-400 mx-auto" />
         )}
 
         <button
           onClick={onToggleOpen}
-          className="p-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-white transition-colors"
+          className="p-1.5 rounded-xl bg-slate-900/90 hover:bg-slate-800 border border-slate-700/60 text-slate-400 hover:text-white transition-colors"
           title={isOpen ? 'Collapse Sidebar' : 'Expand Sidebar'}
         >
           {isOpen ? <ChevronLeft className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
@@ -65,7 +65,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </div>
 
       {/* Topics Navigation List */}
-      <div className="flex-1 overflow-y-auto p-2 space-y-1.5 custom-scrollbar">
+      <div className="flex-1 overflow-y-auto p-2.5 space-y-1.5 custom-scrollbar">
         {ROADMAP_TOPICS.map((topic) => {
           const isCurrent = currentTopicId === topic.id;
           const isExpanded = expandedTopicId === topic.id;
@@ -81,8 +81,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 }}
                 className={`w-full p-2.5 rounded-xl flex items-center justify-center transition-all ${
                   isCurrent
-                    ? 'bg-amber-500/20 text-amber-300 font-mono font-black border border-amber-500/40 shadow-lg'
-                    : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+                    ? 'bg-amber-500/20 text-amber-300 font-mono font-black border border-amber-500/50 shadow-lg shadow-amber-500/10'
+                    : 'text-slate-400 hover:bg-slate-800/60 hover:text-white'
                 }`}
                 title={`Step ${topic.stepNumber}: ${topic.title}`}
               >
@@ -94,12 +94,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
           return (
             <div
               key={topic.id}
-              className={`rounded-2xl transition-all border ${
+              className={`rounded-2xl transition-all border relative overflow-hidden ${
                 isCurrent
-                  ? 'bg-slate-900/90 border-amber-500/50 shadow-md'
-                  : 'bg-transparent border-transparent hover:bg-slate-900/50'
+                  ? 'bg-slate-900/95 border-amber-500/40 shadow-lg shadow-amber-500/5'
+                  : 'bg-transparent border-transparent hover:bg-slate-900/60 hover:border-slate-800/60'
               }`}
             >
+              {/* Active Topic Accent Strip */}
+              {isCurrent && (
+                <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-amber-400 to-amber-600" />
+              )}
+
               {/* Step Header */}
               <div
                 onClick={() => {
@@ -112,8 +117,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   <span
                     className={`px-2 py-0.5 rounded-lg text-xs font-mono font-black shrink-0 ${
                       isCurrent
-                        ? 'bg-amber-500 text-slate-950 shadow-sm'
-                        : 'bg-slate-800 text-slate-300'
+                        ? 'bg-amber-500 text-slate-950 shadow-sm font-extrabold'
+                        : 'bg-slate-800/80 text-slate-300 border border-slate-700/60'
                     }`}
                   >
                     {topic.stepNumber}
@@ -123,7 +128,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     <h3 className={`text-xs font-bold truncate leading-snug ${isCurrent ? 'text-white font-extrabold' : 'text-slate-300'}`}>
                       {topic.title}
                     </h3>
-                    <span className="text-[10px] text-slate-400 font-mono block">
+                    <span className="text-[10px] text-slate-400 font-mono block mt-0.5">
                       {totalRes} resources • {topic.subtopics.length} subtopics
                     </span>
                   </div>
@@ -132,7 +137,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <div className="flex items-center gap-1 shrink-0">
                   <button
                     onClick={(e) => toggleExpand(topic.id, e)}
-                    className="p-1 rounded-md text-slate-500 hover:text-white"
+                    className="p-1 rounded-md text-slate-400 hover:text-white"
                   >
                     {isExpanded ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
                   </button>
@@ -141,12 +146,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
               {/* Expandable Subtopics & Quick Action */}
               {isExpanded && (
-                <div className="px-3 pb-3 pt-1 border-t border-slate-800/60 space-y-2">
+                <div className="px-3 pb-3 pt-1.5 border-t border-slate-800/60 space-y-2.5">
                   <div className="space-y-1">
                     {topic.subtopics.slice(0, 4).map((sub) => (
                       <div
                         key={sub.id}
-                        className="text-[11px] text-slate-400 pl-2 border-l border-slate-800 flex items-center gap-1 truncate"
+                        className="text-[11px] text-slate-400 pl-2.5 border-l border-slate-700/80 flex items-center gap-1 truncate"
                       >
                         <span className="truncate">{sub.title}</span>
                       </div>
@@ -158,7 +163,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       e.stopPropagation();
                       onOpenTopicDashboard(topic.id);
                     }}
-                    className="w-full py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500 hover:text-slate-950 text-amber-300 text-xs font-bold transition-colors flex items-center justify-center gap-1.5 border border-amber-500/30"
+                    className="w-full py-1.5 rounded-xl bg-amber-500/15 hover:bg-amber-500 hover:text-slate-950 text-amber-300 text-xs font-bold transition-all flex items-center justify-center gap-1.5 border border-amber-500/35 shadow-sm"
                   >
                     <span>Open Learning Hub</span>
                     <ArrowRight className="w-3.5 h-3.5" />
