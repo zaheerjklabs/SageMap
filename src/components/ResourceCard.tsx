@@ -48,7 +48,12 @@ export const getResourceThumbnail = (resource: ResourceItem): string => {
     return `https://opengraph.githubassets.com/1/${owner}/${repo}`;
   }
 
-  // 3. High Quality Domain & Topic Based Unsplash Cover Imagery
+  // 3. Udemy Course Thumbnail Extraction via OpenGraph API
+  if (url.includes('udemy.com')) {
+    return `https://api.microlink.io/?url=${encodeURIComponent(url)}&embed=image.url`;
+  }
+
+  // 4. High Quality Domain & Topic Based Unsplash Cover Imagery
   const lowerUrl = url.toLowerCase();
   const lowerTitle = resource.title.toLowerCase();
 
