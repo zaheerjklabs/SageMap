@@ -39,6 +39,9 @@ export interface ResourceItem {
   isCustom?: boolean;
   isEdited?: boolean;
   
+  imageUrl?: string;
+  thumbnailUrl?: string;
+  
   // YouTube specific
   channelName?: string;
   duration?: string;

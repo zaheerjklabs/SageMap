@@ -16,8 +16,7 @@ import {
   CloudUpload,
   CloudDownload,
   Loader2,
-  Bot,
-  Brain
+  Bot
 } from 'lucide-react';
 import { ROADMAP_TOPICS, CATEGORY_DEFINITIONS } from '../data/roadmapData';
 import { ViewMode } from '../types';
@@ -44,7 +43,6 @@ interface TopBarProps {
   onFetchDb?: () => Promise<void>;
   isFetching?: boolean;
   onOpenSageAi?: () => void;
-  onOpenQuiz?: () => void;
 }
 
 export const TopBar: React.FC<TopBarProps> = ({
@@ -67,7 +65,8 @@ export const TopBar: React.FC<TopBarProps> = ({
   onSyncDb,
   isSyncing = false,
   onFetchDb,
-  isFetching = false
+  isFetching = false,
+  onOpenSageAi
 }) => {
   const [showPathfinder, setShowPathfinder] = useState(false);
   const [showCategoryMenu, setShowCategoryMenu] = useState(false);
@@ -237,29 +236,6 @@ export const TopBar: React.FC<TopBarProps> = ({
           </button>
         </div>
 
-        {/* SageAI Learning Assistant Button */}
-        {onOpenSageAi && (
-          <button
-            onClick={onOpenSageAi}
-            className="flex px-2.5 py-1.5 rounded-xl bg-gradient-to-r from-amber-500/20 via-yellow-500/20 to-indigo-500/20 hover:from-amber-500/30 hover:to-indigo-500/30 border border-amber-500/40 text-xs font-bold text-amber-300 items-center gap-1.5 transition-all shadow-md shrink-0 whitespace-nowrap"
-            title="Open SageAI Assistant & Code Generator"
-          >
-            <Bot className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-            <span className="hidden md:inline font-black">SageAI</span>
-          </button>
-        )}
-
-        {/* Quiz & Flashcards Button */}
-        {onOpenQuiz && (
-          <button
-            onClick={onOpenQuiz}
-            className="flex px-2.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-indigo-500/40 text-xs font-bold text-indigo-300 items-center gap-1.5 transition-all shadow-sm shrink-0 whitespace-nowrap"
-            title="Open Active Recall Flashcards & MCQ Quiz"
-          >
-            <Brain className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
-            <span className="hidden md:inline">Quiz</span>
-          </button>
-        )}
 
         {/* Fetch Data from Supabase Button (Available for all users / admins) */}
         {onFetchDb && (

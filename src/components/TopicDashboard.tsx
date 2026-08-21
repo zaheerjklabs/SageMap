@@ -22,8 +22,7 @@ import {
   Share2,
   FileCode2,
   Edit3,
-  Bot,
-  Brain
+  Bot
 } from 'lucide-react';
 import { RoadmapTopic, ResourceType, ResourceItem } from '../types';
 import { ResourceCard } from './ResourceCard';
@@ -42,7 +41,6 @@ interface TopicDashboardProps {
   onSelectTopic: (topicId: number) => void;
   onAddCustomResourceClick?: (topicId: number) => void;
   onOpenSageAi?: (topicId: number) => void;
-  onOpenQuiz?: (topicId: number) => void;
 }
 
 type TabType = 'all' | 'youtube' | 'github' | 'course' | 'project' | 'documentation' | 'paper' | 'book' | 'article' | 'interview' | 'tools';
@@ -59,8 +57,7 @@ export const TopicDashboard: React.FC<TopicDashboardProps> = ({
   onSaveNote,
   onSelectTopic,
   onAddCustomResourceClick,
-  onOpenSageAi,
-  onOpenQuiz
+  onOpenSageAi
 }) => {
   const [activeTab, setActiveTab] = useState<TabType>('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -131,17 +128,6 @@ export const TopicDashboard: React.FC<TopicDashboardProps> = ({
                 >
                   <Bot className="w-4 h-4 text-amber-400" />
                   <span className="hidden sm:inline font-black">SageAI</span>
-                </button>
-              )}
-
-              {onOpenQuiz && (
-                <button
-                  onClick={() => onOpenQuiz(topic.id)}
-                  className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-indigo-500/40 text-xs font-bold text-indigo-300 flex items-center gap-1.5 transition-colors shadow-sm"
-                  title="Take Quiz & Flashcards for this step"
-                >
-                  <Brain className="w-4 h-4 text-indigo-400" />
-                  <span className="hidden sm:inline">Quiz</span>
                 </button>
               )}
 

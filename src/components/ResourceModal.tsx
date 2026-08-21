@@ -44,6 +44,8 @@ export const ResourceModal: React.FC<ResourceModalProps> = ({
   const [durationOrStars, setDurationOrStars] = useState('');
   const [technologiesText, setTechnologiesText] = useState('');
 
+  const [imageUrl, setImageUrl] = useState('');
+
   // Sync form values when opening or when editingResource changes
   useEffect(() => {
     if (editingResource) {
@@ -51,6 +53,7 @@ export const ResourceModal: React.FC<ResourceModalProps> = ({
       setType(editingResource.type);
       setTitle(editingResource.title || '');
       setUrl(editingResource.url || '');
+      setImageUrl(editingResource.imageUrl || editingResource.thumbnailUrl || '');
       setDescription(editingResource.description || '');
       setDifficulty(editingResource.difficulty || 'Intermediate');
       setTechnologiesText(editingResource.technologies ? editingResource.technologies.join(', ') : '');
@@ -85,6 +88,7 @@ export const ResourceModal: React.FC<ResourceModalProps> = ({
       setChannelOrAuthor('');
       setDurationOrStars('');
       setTechnologiesText('');
+      setImageUrl('');
     }
   }, [editingResource, initialTopicId, isOpen]);
 
@@ -107,6 +111,7 @@ export const ResourceModal: React.FC<ResourceModalProps> = ({
       type,
       title: title.trim(),
       url: url.trim(),
+      imageUrl: imageUrl.trim() || undefined,
       description: description.trim() || 'Curated AI & ML learning resource.',
       difficulty,
       technologies: techs,
@@ -237,6 +242,21 @@ export const ResourceModal: React.FC<ResourceModalProps> = ({
               placeholder="https://..."
               value={url}
               onChange={(e) => setUrl(e.target.value)}
+              className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-xs text-slate-200 focus:outline-none focus:border-amber-400 font-mono text-[11px]"
+            />
+          </div>
+
+          {/* Custom Banner Image URL (Optional) */}
+          <div>
+            <label className="text-xs font-bold text-slate-300 block mb-1.5 flex items-center justify-between">
+              <span>Thumbnail / Cover Image URL (Optional)</span>
+              <span className="text-[10px] text-slate-500 font-normal">Auto-fetched from YouTube / GitHub if empty</span>
+            </label>
+            <input
+              type="url"
+              placeholder="https://images.unsplash.com/... (Leave empty for auto-fetch)"
+              value={imageUrl}
+              onChange={(e) => setImageUrl(e.target.value)}
               className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-xs text-slate-200 focus:outline-none focus:border-amber-400 font-mono text-[11px]"
             />
           </div>

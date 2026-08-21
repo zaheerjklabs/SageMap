@@ -1,22 +1,28 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { 
-  X, 
-  Sparkles, 
-  Send, 
-  Bot, 
-  User, 
-  Code2, 
-  HelpCircle, 
-  Zap, 
-  BookOpen, 
-  Copy, 
-  Check, 
+import {
+  X,
+  Sparkles,
+  Send,
+  Bot,
+  User,
+  Code2,
+  HelpCircle,
+  Zap,
+  BookOpen,
+  Copy,
+  Check,
   RotateCcw,
   MessageSquare,
   Lightbulb,
   ChevronRight,
-  Terminal
+  Terminal,
+  Settings,
+  Key,
+  ExternalLink,
+  ShieldCheck,
+  Minus
 } from 'lucide-react';
+import { GoogleGenAI } from '@google/genai';
 import { RoadmapTopic } from '../types';
 
 interface Message {
@@ -47,7 +53,44 @@ export const SageAITutorDrawer: React.FC<SageAITutorDrawerProps> = ({
   const [inputQuery, setInputQuery] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  // LLM API Key Settings State
+  const [showSettings, setShowSettings] = useState(false);
+  const [apiKeyInput, setApiKeyInput] = useState(() => {
+    try {
+      return (
+        localStorage.getItem('sagemap_gemini_api_key') ||
+        import.meta.env.VITE_GEMINI_API_KEY ||
+        import.meta.env.GEMINI_API_KEY ||
+        ''
+      );
+    } catch {
+      return '';
+    }
+  });
+  const [activeApiKey, setActiveApiKey] = useState(apiKeyInput);
+  const [apiKeySavedNotice, setApiKeySavedNotice] = useState(false);
+
   const chatEndRef = useRef<HTMLDivElement>(null);
+
+  // Save API key handler
+  const handleSaveApiKey = (e: React.FormEvent) => {
+    e.preventDefault();
+    const cleanKey = apiKeyInput.trim();
+    setActiveApiKey(cleanKey);
+    try {
+      if (cleanKey) {
+        localStorage.setItem('sagemap_gemini_api_key', cleanKey);
+      } else {
+        localStorage.removeItem('sagemap_gemini_api_key');
+      }
+    } catch {
+      // ignore storage errors
+    }
+    setApiKeySavedNotice(true);
+    setTimeout(() => setApiKeySavedNotice(false), 2500);
+    setShowSettings(false);
+  };
 
   // Initialize welcoming message whenever the active topic changes or drawer opens
   useEffect(() => {
@@ -56,7 +99,7 @@ export const SageAITutorDrawer: React.FC<SageAITutorDrawerProps> = ({
         {
           id: `welcome-${topic.id}`,
           sender: 'ai',
-          text: `Welcome to **Step ${topic.stepNumber}: ${topic.title}**!\n\nI am your **SageAI Learning Assistant**. Ask me anything about this milestone—whether you need a simplified explanation, PyTorch code implementation, or interview advice.`,
+          text: `Welcome to **Step ${topic.stepNumber}: ${topic.title}**!\n\nI am your **SageAI Learning Assistant**. Ask me how to learn Machine Learning, Deep Learning, request PyTorch code, or ask for **Books, Courses, and Projects** recommendations from our resources section.`,
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
         }
       ]);
@@ -75,7 +118,7 @@ export const SageAITutorDrawer: React.FC<SageAITutorDrawerProps> = ({
     setTimeout(() => setCopiedId(null), 2000);
   };
 
-  const generateAIResponse = (userPrompt: string) => {
+  const generateAIResponse = async (userPrompt: string) => {
     setIsGenerating(true);
 
     const userMsg: Message = {
@@ -88,140 +131,152 @@ export const SageAITutorDrawer: React.FC<SageAITutorDrawerProps> = ({
     setMessages((prev) => [...prev, userMsg]);
     setInputQuery('');
 
-    // Simulate intelligent context-aware AI response calculation
-    setTimeout(() => {
-      let responseText = '';
-      let codeSnippet = '';
-      let codeLanguage = 'python';
+    const apiKey =
+      activeApiKey ||
+      import.meta.env.VITE_GEMINI_API_KEY ||
+      import.meta.env.GEMINI_API_KEY ||
+      '';
 
-      const promptLower = userPrompt.toLowerCase();
-
-      if (
-        promptLower.includes('want to learn') ||
-        promptLower.includes('learn ml') ||
-        promptLower.includes('learn ai') ||
-        promptLower.includes('resource') ||
-        promptLower.includes('order') ||
-        promptLower.includes('where to start') ||
-        promptLower.includes('recommend') ||
-        promptLower.includes('roadmap') ||
-        promptLower.includes('study')
-      ) {
-        const ytRes = topic.resources.filter((r) => r.type === 'youtube');
-        const courseRes = topic.resources.filter((r) => r.type === 'course');
-        const projRes = topic.resources.filter((r) => r.type === 'github' || r.type === 'project');
-        const docRes = topic.resources.filter((r) => r.type === 'documentation');
-        const theoryRes = topic.resources.filter((r) => r.type === 'paper' || r.type === 'book' || r.type === 'article');
-
-        let resText = `### 📚 Curated Learning Path & Ordered Resources for Step ${topic.stepNumber}: ${topic.title}\n\nHere are the top resources from our **SageMap Resources Section** listed in exact recommended study order:\n\n`;
-
-        let sectionNum = 1;
-        if (ytRes.length > 0) {
-          resText += `#### ${sectionNum++}. 🎬 Video Courses & Deep-Dives (YouTube)\n`;
-          ytRes.forEach((r) => {
-            const author = r.channelName || r.author || 'Curated Channel';
-            resText += `* **[${r.title}](${r.url})**\n  * *Author/Channel:* ${author} • *Difficulty:* ${r.difficulty || 'All Levels'}\n  * *Summary:* ${r.description}\n\n`;
-          });
-        }
-
-        if (courseRes.length > 0) {
-          resText += `#### ${sectionNum++}. 🎓 Structured Courses\n`;
-          courseRes.forEach((r) => {
-            const inst = r.instructor || r.platform || 'Udemy / Coursera';
-            resText += `* **[${r.title}](${r.url})**\n  * *Platform/Instructor:* ${inst} • *Difficulty:* ${r.difficulty || 'Intermediate'}\n  * *Summary:* ${r.description}\n\n`;
-          });
-        }
-
-        if (projRes.length > 0) {
-          resText += `#### ${sectionNum++}. 💻 Hands-on Code & GitHub Repositories\n`;
-          projRes.forEach((r) => {
-            const stars = r.stars ? ` (${r.stars} stars)` : '';
-            resText += `* **[${r.title}](${r.url})**${stars}\n  * *Author:* ${r.author || 'Open Source'} • *Summary:* ${r.description}\n\n`;
-          });
-        }
-
-        if (docRes.length > 0) {
-          resText += `#### ${sectionNum++}. 🌐 Official Documentation & Sandboxes\n`;
-          docRes.forEach((r) => {
-            resText += `* **[${r.title}](${r.url})**\n  * *Reference:* ${r.siteName || 'Official Reference'} • *Summary:* ${r.description}\n\n`;
-          });
-        }
-
-        if (theoryRes.length > 0) {
-          resText += `#### ${sectionNum++}. 📄 Papers & Essential Books\n`;
-          theoryRes.forEach((r) => {
-            resText += `* **[${r.title}](${r.url})**\n  * *Author/Venue:* ${r.authors || r.bookAuthor || r.publication || 'Curated Text'} • *Summary:* ${r.description}\n\n`;
-          });
-        }
-
-        if (topic.resources.length === 0) {
-          resText += `No custom resources added yet for this topic. Use the **Add Resource** button to contribute!`;
-        } else {
-          resText += `💡 **Study Tip:** Complete Section 1 (Videos) & Section 2 (Courses) first, then build hands-on skills with Section 3 (GitHub Projects)!`;
-        }
-
-        responseText = resText;
-      } else if (promptLower.includes('like i\'m 5') || promptLower.includes('simple') || promptLower.includes('eli5')) {
-        responseText = `### 💡 ${topic.title} explained simply:\n\nImagine you have a super-smart assistant sitting next to you. Instead of guessing blindly, **${topic.title}** provides the exact framework needed to break down complex tasks.\n\n* **Core Idea:** ${topic.overview}\n* **Key Takeaway:** Master the key concepts first: ${topic.coreConcepts.map(c => c.title).slice(0, 3).join(', ')} before scaling up!`;
-      } else if (promptLower.includes('code') || promptLower.includes('pytorch') || promptLower.includes('python') || promptLower.includes('implementation')) {
-        responseText = `### ⚡ PyTorch / Python Code Implementation for ${topic.title}:\n\nHere is a clean, production-ready snippet demonstrating the core architecture pattern:`;
-        codeLanguage = 'python';
-        codeSnippet = `# SageMap Production Snippet: ${topic.title}
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
-
-class ${topic.title.replace(/[^a-zA-Z0-9]/g, '')}Module(nn.Module):
-    """
-    Implementation pattern for ${topic.title}
-    Category: ${topic.categoryLabel}
-    """
-    def __init__(self, in_features: int = 512, hidden_dim: int = 1024):
-        super().__init__()
-        self.fc1 = nn.Linear(in_features, hidden_dim)
-        self.norm = nn.LayerNorm(hidden_dim)
-        self.fc2 = nn.Linear(hidden_dim, in_features)
-        self.dropout = nn.Dropout(0.1)
-
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        # Residual connection with layer normalization
-        residual = x
-        x = F.gelu(self.fc1(x))
-        x = self.dropout(self.fc2(x))
-        return self.norm(x + residual)
-
-# Example Instantiation
-if __name__ == "__main__":
-    device = "cuda" if torch.cuda.is_available() else "cpu"
-    model = ${topic.title.replace(/[^a-zA-Z0-9]/g, '')}Module().to(device)
-    dummy_input = torch.randn(8, 512).to(device)
-    output = model(dummy_input)
-    print(f"✅ Executed ${topic.title} module forward pass! Output shape: {output.shape}")`;
-      } else if (promptLower.includes('interview') || promptLower.includes('trap') || promptLower.includes('question')) {
-        const topQ = topic.interviewQuestions[0] || {
-          question: `What is the core architectural principle of ${topic.title}?`,
-          answerSummary: `Focus on mathematical guarantees, computational complexity, and gradient flow stability.`,
-          difficulty: 'Senior'
-        };
-        responseText = `### 🧠 Key Interview Question for ${topic.title} (${topQ.difficulty}):\n\n**Q: ${topQ.question}**\n\n**Best Answer:**\n${topQ.answerSummary}\n\n**💡 Pro Tip:** Interviewers often check if you understand gradient stability and practical memory trade-offs in GPU memory.`;
-      } else if (promptLower.includes('production') || promptLower.includes('agent') || promptLower.includes('real-world')) {
-        responseText = `### 🚀 Real-World Production Usage of ${topic.title}:\n\nIn industry environments (OpenAI, Anthropic, Google DeepMind), **${topic.title}** is critical for:\n\n1. **Scalability:** Handles high-throughput vector processing.\n2. **Tools & Ecosystem:** Primary tools used include ${topic.toolsAndFrameworks.map(t => t.name).join(', ') || 'PyTorch, HuggingFace & Ray'}.\n3. **Best Practice:** Keep subtopics organized: ${topic.subtopics.map(s => s.title).join(', ')}.`;
-      } else {
-        responseText = `### 🎯 Insights on ${topic.title}:\n\n${topic.overview}\n\n**Recommended Learning Order:**\n${topic.recommendedOrder.map((step, i) => `${i + 1}. ${step}`).join('\n')}\n\nFeel free to click any quick prompt below to dive deeper into code or interview questions!`;
-      }
-
+    if (!apiKey || apiKey.length < 5) {
+      setShowSettings(true);
       const aiMsg: Message = {
         id: `ai-${Date.now()}`,
         sender: 'ai',
-        text: responseText,
-        codeSnippet,
-        codeLanguage,
+        text: `### 🔑 Enter Gemini API Key to Activate SageAI\n\nTo receive dynamic, live AI responses generated directly by **Google Gemini LLM**, please paste your free **Gemini API Key** in the settings panel above!\n\n> Get a free API key at [aistudio.google.com](https://aistudio.google.com).`,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       };
-
       setMessages((prev) => [...prev, aiMsg]);
       setIsGenerating(false);
-    }, 650);
+      return;
+    }
+
+    const ragContext = topic.resources.map((r) => ({
+      title: r.title,
+      type: r.type,
+      url: r.url,
+      description: r.description,
+      author: r.author || r.channelName || r.instructor || r.bookAuthor || 'SageMap Resource'
+    }));
+
+    const systemInstructionText = `You are SageAI, the flagship AI & Machine Learning tutor embedded in SageMap.
+Your primary directive is to directly, dynamically, and thoroughly answer the user's specific prompt:
+1. If the user asks to explain a concept or algorithm (e.g., gradient descent, random forest, logistic regression, overfitting, backprop, transformers), explain that EXACT concept directly using clear math equations, bullet points, and practical examples.
+2. If the user asks for PyTorch code or implementation, generate a clean, production-grade Python snippet wrapped in markdown code blocks (\`\`\`python ... \`\`\`).
+3. If recommending learning materials, cite relevant uploaded SageMap RAG resources from the context above or top industry resources using clickable markdown links [Resource Title](URL).
+4. Format all responses in clean, beautifully structured Markdown with headers (###, ####), bold emphasis (**text**), and blockquotes (> note).`;
+
+    const promptText = `User Query: "${userPrompt}"\n\nContext:\nActive Step ${topic.stepNumber}: ${topic.title} (${topic.categoryLabel})\nOverview: ${topic.overview}\nCore Concepts: ${topic.coreConcepts.map((c) => c.title).join(', ')}\nSubtopics: ${topic.subtopics.map((s) => s.title).join(', ')}\n\nUploaded SageMap RAG Resources:\n${JSON.stringify(ragContext, null, 2)}`;
+
+    // Try REST API endpoints across candidate model aliases
+    const modelCandidates = [
+      'gemini-1.5-flash',
+      'gemini-1.5-pro',
+      'gemini-2.0-flash',
+      'gemini-2.0-flash-exp',
+      'gemini-2.5-flash',
+      'gemini-3.6-flash'
+    ];
+
+    let responseText = '';
+    let lastApiErrorMessage = '';
+
+    for (const modelName of modelCandidates) {
+      try {
+        const res = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [
+                {
+                  parts: [{ text: promptText }]
+                }
+              ],
+              systemInstruction: {
+                parts: [{ text: systemInstructionText }]
+              }
+            })
+          }
+        );
+
+        if (res.ok) {
+          const data = await res.json();
+          const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (text) {
+            responseText = text;
+            break;
+          }
+        } else {
+          const errBody = await res.json().catch(() => null);
+          lastApiErrorMessage = errBody?.error?.message || `HTTP ${res.status}`;
+          console.warn(`Model ${modelName} call returned ${res.status}:`, errBody);
+        }
+      } catch (err: any) {
+        lastApiErrorMessage = err.message || 'Network error';
+        console.warn(`Fetch error for ${modelName}:`, err);
+      }
+    }
+
+    // Fallback to SDK if REST fetch was blocked
+    if (!responseText) {
+      try {
+        const ai = new GoogleGenAI({ apiKey });
+        for (const modelName of ['gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-2.0-flash']) {
+          try {
+            const sdkRes = await ai.models.generateContent({
+              model: modelName,
+              contents: promptText,
+              config: { systemInstruction: systemInstructionText }
+            });
+            if (sdkRes && sdkRes.text) {
+              responseText = sdkRes.text;
+              break;
+            }
+          } catch (e) {
+            // ignore
+          }
+        }
+      } catch (e) {
+        // ignore
+      }
+    }
+
+    if (!responseText) {
+      setIsGenerating(false);
+      setShowSettings(true);
+      const errorMsg: Message = {
+        id: `ai-err-${Date.now()}`,
+        sender: 'ai',
+        text: `### ⚠️ Gemini API Notice\n\nCould not fetch response from Google Gemini API: **${lastApiErrorMessage || 'API Key Invalid or Quota Exceeded'}**\n\nPlease check your Gemini API key in the settings panel above (⚙️). Get a free key at [aistudio.google.com](https://aistudio.google.com).`,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      };
+      setMessages((prev) => [...prev, errorMsg]);
+      return;
+    }
+
+    let codeSnippet: string | undefined = undefined;
+    let codeLanguage: string | undefined = undefined;
+
+    const codeMatch = responseText.match(/```(\w*)\n([\s\S]*?)```/);
+    if (codeMatch) {
+      codeLanguage = codeMatch[1] || 'python';
+      codeSnippet = codeMatch[2].trim();
+    }
+
+    const cleanText = responseText.replace(/```(\w*)\n[\s\S]*?```/g, '').trim();
+
+    const aiMsg: Message = {
+      id: `ai-${Date.now()}`,
+      sender: 'ai',
+      text: cleanText || responseText,
+      codeSnippet,
+      codeLanguage,
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    };
+
+    setMessages((prev) => [...prev, aiMsg]);
+    setIsGenerating(false);
   };
 
   const handlePromptClick = (promptText: string) => {
@@ -229,16 +284,87 @@ if __name__ == "__main__":
     generateAIResponse(promptText);
   };
 
+  const parseInlineMarkdown = (lineText: string, lIdx: number): React.ReactNode => {
+    // Regex matching bold **text**, links [title](url), code `snippet`, and italics *text*
+    const tokenRegex = /(\*\*.*?\*\*|\[.*?\]\(.*?\)|`.*?`|\*.*?\*)/g;
+    const parts: React.ReactNode[] = [];
+    let lastIdx = 0;
+    let match: RegExpExecArray | null;
+
+    while ((match = tokenRegex.exec(lineText)) !== null) {
+      if (match.index > lastIdx) {
+        parts.push(lineText.substring(lastIdx, match.index));
+      }
+      const token = match[0];
+      const key = `inline-${lIdx}-${match.index}`;
+
+      if (token.startsWith('**') && token.endsWith('**') && token.length >= 4) {
+        const content = token.slice(2, -2);
+        parts.push(
+          <strong key={key} className="font-black text-amber-200">
+            {parseInlineMarkdown(content, lIdx)}
+          </strong>
+        );
+      } else if (token.startsWith('[') && token.includes('](') && token.endsWith(')')) {
+        const titleMatch = token.match(/^\[([^\]]+)\]\(([^)]+)\)$/);
+        if (titleMatch) {
+          const title = titleMatch[1];
+          const url = titleMatch[2];
+          parts.push(
+            <a
+              key={key}
+              href={url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-cyan-300 hover:text-cyan-200 font-bold underline transition-colors inline-flex items-center gap-0.5"
+            >
+              <span>{title}</span>
+              <span className="text-[10px]">↗</span>
+            </a>
+          );
+        } else {
+          parts.push(token);
+        }
+      } else if (token.startsWith('`') && token.endsWith('`') && token.length >= 2) {
+        const content = token.slice(1, -1);
+        parts.push(
+          <code key={key} className="px-1.5 py-0.5 rounded bg-slate-950 border border-slate-800 font-mono text-cyan-300 text-[11px]">
+            {content}
+          </code>
+        );
+      } else if (token.startsWith('*') && token.endsWith('*') && token.length >= 2) {
+        const content = token.slice(1, -1);
+        parts.push(
+          <em key={key} className="italic text-slate-300 font-medium">
+            {content}
+          </em>
+        );
+      } else {
+        parts.push(token);
+      }
+
+      lastIdx = tokenRegex.lastIndex;
+    }
+
+    if (lastIdx < lineText.length) {
+      parts.push(lineText.substring(lastIdx));
+    }
+
+    return parts.length > 0 ? parts : lineText;
+  };
+
   const renderFormattedText = (text: string) => {
     const lines = text.split('\n');
     return lines.map((line, lIdx) => {
+      // H3 Headers
       if (line.startsWith('### ')) {
         return (
-          <h3 key={lIdx} className="text-sm font-black text-amber-300 mt-2 mb-1">
-            {line.replace('### ', '')}
+          <h3 key={lIdx} className="text-sm font-black text-amber-300 mt-3 mb-1.5 flex items-center gap-1.5">
+            <span>{line.replace('### ', '')}</span>
           </h3>
         );
       }
+      // H4 Subheaders
       if (line.startsWith('#### ')) {
         return (
           <h4 key={lIdx} className="text-xs font-bold text-cyan-300 mt-2 mb-1">
@@ -246,47 +372,134 @@ if __name__ == "__main__":
           </h4>
         );
       }
-
-      const linkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
-      const parts: React.ReactNode[] = [];
-      let lastIdx = 0;
-      let match: RegExpExecArray | null;
-
-      while ((match = linkRegex.exec(line)) !== null) {
-        if (match.index > lastIdx) {
-          parts.push(line.substring(lastIdx, match.index));
-        }
-        const title = match[1];
-        const url = match[2];
-        parts.push(
-          <a
-            key={`link-${lIdx}-${match.index}`}
-            href={url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-cyan-300 hover:text-cyan-200 font-bold underline transition-colors inline-flex items-center gap-0.5"
-          >
-            <span>{title}</span>
-            <span className="text-[10px]">↗</span>
-          </a>
+      // Blockquotes
+      if (line.startsWith('> ')) {
+        const content = line.replace('> ', '');
+        return (
+          <blockquote key={lIdx} className="my-1.5 p-2 rounded-xl bg-amber-500/10 border-l-2 border-amber-400 text-[11px] text-amber-200/90 italic">
+            {parseInlineMarkdown(content, lIdx)}
+          </blockquote>
         );
-        lastIdx = linkRegex.lastIndex;
       }
-
-      if (lastIdx < line.length) {
-        parts.push(line.substring(lastIdx));
+      // Bullet list items (* or -)
+      if (line.startsWith('* ') || line.startsWith('- ')) {
+        const content = line.slice(2);
+        return (
+          <div key={lIdx} className="flex items-start gap-1.5 my-0.5 pl-1 text-slate-200">
+            <span className="text-amber-400 font-bold text-xs leading-relaxed shrink-0">•</span>
+            <div className="flex-1 min-w-0">{parseInlineMarkdown(content, lIdx)}</div>
+          </div>
+        );
       }
 
       return (
         <div key={lIdx} className={line.trim() === '' ? 'h-1.5' : 'min-h-[1.25em]'}>
-          {parts.length > 0 ? parts : line}
+          {parseInlineMarkdown(line, lIdx)}
+        </div>
+      );
+    });
+  };
+
+  const highlightCodeSyntax = (code: string, language: string = 'python'): React.ReactNode => {
+    const lines = code.split('\n');
+
+    return lines.map((line, lIdx) => {
+      const trimmed = line.trim();
+      if (trimmed.startsWith('#')) {
+        return (
+          <div key={lIdx} className="text-slate-500 italic font-mono leading-snug">
+            {line}
+          </div>
+        );
+      }
+      if (trimmed.startsWith('"""') || trimmed.startsWith("'''")) {
+        return (
+          <div key={lIdx} className="text-emerald-400/80 italic font-mono leading-snug">
+            {line}
+          </div>
+        );
+      }
+
+      const tokenRegex = /("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|\b(?:class|def|import|from|return|if|else|elif|for|while|in|as|is|not|and|or|try|except|finally|raise|pass|break|continue|lambda|yield|async|await|with|assert)\b|\b(?:self|super|True|False|None)\b|\b\d+(?:\.\d+)?\b|\b[A-Z][a-zA-Z0-9_]*\b|\b[a-z_][a-zA-Z0-9_]*(?=\s*\()|[#].*)/g;
+
+      const tokens: React.ReactNode[] = [];
+      let lastIdx = 0;
+      let match: RegExpExecArray | null;
+
+      while ((match = tokenRegex.exec(line)) !== null) {
+        if (match.index > lastIdx) {
+          tokens.push(line.substring(lastIdx, match.index));
+        }
+        const token = match[0];
+        const key = `code-tok-${lIdx}-${match.index}`;
+
+        if (token.startsWith('#')) {
+          tokens.push(
+            <span key={key} className="text-slate-500 italic font-mono">
+              {token}
+            </span>
+          );
+        } else if (token.startsWith('"') || token.startsWith("'")) {
+          tokens.push(
+            <span key={key} className="text-emerald-300 font-medium">
+              {token}
+            </span>
+          );
+        } else if (
+          /^(class|def|import|from|return|if|else|elif|for|while|in|as|is|not|and|or|try|except|finally|raise|pass|break|continue|lambda|yield|async|await|with|assert)$/.test(
+            token
+          )
+        ) {
+          tokens.push(
+            <span key={key} className="text-rose-400 font-bold">
+              {token}
+            </span>
+          );
+        } else if (/^(self|super|True|False|None)$/.test(token)) {
+          tokens.push(
+            <span key={key} className="text-purple-300 font-bold">
+              {token}
+            </span>
+          );
+        } else if (/^[A-Z][a-zA-Z0-9_]*$/.test(token)) {
+          tokens.push(
+            <span key={key} className="text-amber-300 font-bold">
+              {token}
+            </span>
+          );
+        } else if (/^\d+(?:\.\d+)?$/.test(token)) {
+          tokens.push(
+            <span key={key} className="text-orange-300 font-mono">
+              {token}
+            </span>
+          );
+        } else if (/^[a-z_][a-zA-Z0-9_]*$/.test(token)) {
+          tokens.push(
+            <span key={key} className="text-cyan-300 font-semibold">
+              {token}
+            </span>
+          );
+        } else {
+          tokens.push(token);
+        }
+
+        lastIdx = tokenRegex.lastIndex;
+      }
+
+      if (lastIdx < line.length) {
+        tokens.push(line.substring(lastIdx));
+      }
+
+      return (
+        <div key={lIdx} className="leading-snug font-mono whitespace-pre">
+          {tokens.length > 0 ? tokens : line}
         </div>
       );
     });
   };
 
   return (
-    <div className="fixed inset-y-0 right-0 z-50 w-full sm:w-[450px] md:w-[480px] bg-[#0D1117]/95 border-l border-slate-700/80 shadow-2xl backdrop-blur-xl flex flex-col font-sans text-slate-100 animate-slideInRight select-none">
+    <div className="fixed bottom-5 right-5 sm:bottom-6 sm:right-6 z-50 w-[calc(100vw-2.5rem)] sm:w-[420px] md:w-[450px] h-[560px] max-h-[calc(100vh-5rem)] bg-[#0D1117]/98 border border-slate-800/90 rounded-3xl shadow-2xl backdrop-blur-2xl flex flex-col font-sans text-slate-100 animate-fadeIn overflow-hidden">
       {/* Top Header */}
       <div className="p-4 border-b border-slate-800/80 bg-slate-950/80 flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -306,13 +519,87 @@ if __name__ == "__main__":
           </div>
         </div>
 
-        <button
-          onClick={onClose}
-          className="p-1.5 rounded-xl bg-slate-900 text-slate-400 hover:text-white border border-slate-800 transition-colors"
-        >
-          <X className="w-4 h-4" />
-        </button>
+        <div className="flex items-center gap-1.5">
+          <button
+            onClick={() => setShowSettings(!showSettings)}
+            className={`p-1.5 rounded-xl border transition-colors ${showSettings || activeApiKey
+                ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+                : 'bg-slate-900 text-slate-400 hover:text-white border-slate-800'
+              }`}
+            title="Configure LLM API Key (Google Gemini)"
+          >
+            <Settings className="w-4 h-4" />
+          </button>
+
+          <button
+            onClick={onClose}
+            className="p-1.5 rounded-xl bg-slate-900 text-slate-400 hover:text-amber-300 border border-slate-800 transition-colors"
+            title="Minimize / Hide Assistant (Conversation & background process preserved)"
+          >
+            <Minus className="w-4 h-4" />
+          </button>
+
+          <button
+            onClick={onClose}
+            className="p-1.5 rounded-xl bg-slate-900 text-slate-400 hover:text-white border border-slate-800 transition-colors"
+            title="Close Assistant"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
       </div>
+
+      {/* LLM API Key Settings Panel */}
+      {showSettings && (
+        <form onSubmit={handleSaveApiKey} className="p-4 bg-slate-950 border-b border-slate-800 space-y-3 animate-fadeIn">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-amber-300 flex items-center gap-1.5">
+              <Key className="w-3.5 h-3.5 text-amber-400" />
+              <span>Configure Gemini LLM API Key</span>
+            </span>
+            <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-slate-900 text-cyan-300 border border-slate-800">
+              Model: gemini-1.5-flash
+            </span>
+          </div>
+
+          <p className="text-[11px] text-slate-400 leading-relaxed">
+            Enter your Google Gemini API key to enable live LLM responses. Get a free key at{' '}
+            <a
+              href="https://aistudio.google.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-cyan-300 hover:underline inline-flex items-center gap-0.5 font-bold"
+            >
+              <span>aistudio.google.com</span>
+              <ExternalLink className="w-3 h-3" />
+            </a>
+            {' '}or set <code className="text-amber-300 font-mono text-[10px]">VITE_GEMINI_API_KEY</code> in <code className="text-amber-300 font-mono text-[10px]">.env.local</code>.
+          </p>
+
+          <div className="flex items-center gap-2">
+            <input
+              type="password"
+              placeholder="Paste AI Studio Gemini Key (AIzaSy...)"
+              value={apiKeyInput}
+              onChange={(e) => setApiKeyInput(e.target.value)}
+              className="flex-1 px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-xs font-mono text-slate-100 placeholder-slate-500 focus:outline-none focus:border-amber-400"
+            />
+            <button
+              type="submit"
+              className="px-4 py-1.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-extrabold text-xs shadow-md transition-colors whitespace-nowrap"
+            >
+              Save Key
+            </button>
+          </div>
+
+          {activeApiKey && (
+            <div className="flex items-center gap-1.5 text-[11px] text-emerald-400 font-bold font-mono">
+              <ShieldCheck className="w-3.5 h-3.5" />
+              <span>Gemini API Key active for live LLM queries!</span>
+            </div>
+          )}
+        </form>
+      )}
 
       {/* Topic Switcher Bar */}
       <div className="px-4 py-2 bg-slate-900/80 border-b border-slate-800/60 flex items-center justify-between text-xs">
@@ -346,11 +633,10 @@ if __name__ == "__main__":
               </div>
             )}
 
-            <div className={`max-w-[85%] rounded-2xl p-3.5 text-xs leading-relaxed shadow-lg ${
-              msg.sender === 'user'
+            <div className={`max-w-[85%] rounded-2xl p-3.5 text-xs leading-relaxed shadow-lg ${msg.sender === 'user'
                 ? 'bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 font-bold rounded-tr-none'
                 : 'bg-slate-900/90 border border-slate-800 text-slate-200 rounded-tl-none'
-            }`}>
+              }`}>
               <div className="font-sans font-medium">
                 {renderFormattedText(msg.text)}
               </div>
@@ -379,8 +665,8 @@ if __name__ == "__main__":
                       )}
                     </button>
                   </div>
-                  <pre className="p-3 overflow-x-auto text-cyan-300 leading-relaxed custom-scrollbar">
-                    <code>{msg.codeSnippet}</code>
+                  <pre className="p-3 overflow-x-auto text-slate-200 leading-relaxed custom-scrollbar">
+                    <code>{highlightCodeSyntax(msg.codeSnippet, msg.codeLanguage)}</code>
                   </pre>
                 </div>
               )}
@@ -413,46 +699,8 @@ if __name__ == "__main__":
         <div ref={chatEndRef} />
       </div>
 
-      {/* Suggested Quick Prompt Chips */}
-      <div className="p-3 bg-slate-950/90 border-t border-slate-800/80 space-y-2">
-        <div className="flex items-center gap-1.5 text-[11px] font-bold text-slate-400">
-          <Lightbulb className="w-3.5 h-3.5 text-amber-400" />
-          <span>Quick Topic Prompts:</span>
-        </div>
-        <div className="grid grid-cols-2 gap-1.5 text-[11px]">
-          <button
-            onClick={() => handlePromptClick(`Explain ${topic.title} like I'm 5`)}
-            className="p-2 rounded-xl bg-slate-900 hover:bg-slate-850 border border-slate-800 hover:border-amber-400/50 text-left text-slate-300 hover:text-amber-300 transition-all font-medium flex items-center gap-1.5 truncate"
-          >
-            <span>💡</span>
-            <span className="truncate">Explain like I'm 5</span>
-          </button>
-
-          <button
-            onClick={() => handlePromptClick(`Show PyTorch code for ${topic.title}`)}
-            className="p-2 rounded-xl bg-slate-900 hover:bg-slate-850 border border-slate-800 hover:border-cyan-400/50 text-left text-slate-300 hover:text-cyan-300 transition-all font-medium flex items-center gap-1.5 truncate"
-          >
-            <span>⚡</span>
-            <span className="truncate">PyTorch Code Snippet</span>
-          </button>
-
-          <button
-            onClick={() => handlePromptClick(`What are interview traps for ${topic.title}?`)}
-            className="p-2 rounded-xl bg-slate-900 hover:bg-slate-850 border border-slate-800 hover:border-indigo-400/50 text-left text-slate-300 hover:text-indigo-300 transition-all font-medium flex items-center gap-1.5 truncate"
-          >
-            <span>🧠</span>
-            <span className="truncate">Interview Questions</span>
-          </button>
-
-          <button
-            onClick={() => handlePromptClick(`How is ${topic.title} used in Production AI?`)}
-            className="p-2 rounded-xl bg-slate-900 hover:bg-slate-850 border border-slate-800 hover:border-emerald-400/50 text-left text-slate-300 hover:text-emerald-300 transition-all font-medium flex items-center gap-1.5 truncate"
-          >
-            <span>🚀</span>
-            <span className="truncate">Production Usage</span>
-          </button>
-        </div>
-
+      {/* Input Footer */}
+      <div className="p-3 bg-slate-950/90 border-t border-slate-800/80">
         {/* Input Form */}
         <form
           onSubmit={(e) => {

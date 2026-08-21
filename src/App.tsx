@@ -27,7 +27,7 @@ import { ResourceModal } from './components/ResourceModal';
 import { DeleteConfirmModal } from './components/DeleteConfirmModal';
 import { AuthModal } from './components/AuthModal';
 import { SageAITutorDrawer } from './components/SageAITutorDrawer';
-import { QuizFlashcardModal } from './components/QuizFlashcardModal';
+import { Bot } from 'lucide-react';
 
 export default function App() {
   const { isAdmin, isLoading: authLoading, signIn, signUp, signOut, user, isPasswordRecovery } = useAuth();
@@ -41,7 +41,6 @@ export default function App() {
   const [dashboardTopicId, setDashboardTopicId] = useState<number | null>(null);
 
   const [isSageAiOpen, setIsSageAiOpen] = useState<boolean>(false);
-  const [isQuizModalOpen, setIsQuizModalOpen] = useState<boolean>(false);
 
   const [isResourceModalOpen, setIsResourceModalOpen] = useState<boolean>(false);
   const [resourceModalTopicId, setResourceModalTopicId] = useState<number>(1);
@@ -336,7 +335,6 @@ export default function App() {
         onFetchDb={handleFetchDb}
         isFetching={isFetching}
         onOpenSageAi={() => setIsSageAiOpen(true)}
-        onOpenQuiz={() => setIsQuizModalOpen(true)}
       />
 
       {toastMessage && (
@@ -415,23 +413,32 @@ export default function App() {
           setCurrentTopicId(id);
           setIsSageAiOpen(true);
         }}
-        onOpenQuiz={(id) => {
-          setCurrentTopicId(id);
-          setIsQuizModalOpen(true);
-        }}
       />
+
+      {/* Floating AI Chatbot Button (Visible on all views when drawer is closed) */}
+      {!isSageAiOpen && (
+        <button
+          onClick={() => setIsSageAiOpen(true)}
+          className="fixed bottom-6 right-6 z-40 p-[2px] rounded-full bg-gradient-to-tr from-amber-500 via-yellow-400 to-indigo-600 shadow-2xl hover:scale-110 active:scale-95 transition-all duration-300 group"
+          title="Open SageAI Tutor Assistant"
+        >
+          <div className="w-14 h-14 rounded-full bg-slate-950 flex items-center justify-center relative overflow-hidden">
+            {/* Glowing animated background aura */}
+            <div className="absolute inset-0 bg-gradient-to-tr from-amber-500/20 via-yellow-400/20 to-indigo-600/20 animate-pulse" />
+            
+            {/* Bot Icon */}
+            <Bot className="w-7 h-7 text-amber-300 group-hover:text-amber-200 transition-colors z-10 stroke-[2.2]" />
+
+            {/* Glowing status indicator */}
+            <span className="absolute top-2 right-2 w-3 h-3 rounded-full bg-amber-400 border-2 border-slate-950 animate-ping" />
+            <span className="absolute top-2 right-2 w-3 h-3 rounded-full bg-amber-400 border-2 border-slate-950" />
+          </div>
+        </button>
+      )}
 
       <SageAITutorDrawer
         isOpen={isSageAiOpen}
         onClose={() => setIsSageAiOpen(false)}
-        topic={resolvedTopics.find((t) => t.id === currentTopicId) || resolvedTopics[0]}
-        topics={resolvedTopics}
-        onSelectTopic={handleSelectTopic}
-      />
-
-      <QuizFlashcardModal
-        isOpen={isQuizModalOpen}
-        onClose={() => setIsQuizModalOpen(false)}
         topic={resolvedTopics.find((t) => t.id === currentTopicId) || resolvedTopics[0]}
         topics={resolvedTopics}
         onSelectTopic={handleSelectTopic}
