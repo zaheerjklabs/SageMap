@@ -14,6 +14,7 @@ export interface DbResourceRow {
 export interface FetchResourcesResult {
   resources: ResourceItem[];
   deletedIds: string[];
+  resourceOrder: string[];
   isInitialized: boolean;
 }
 
@@ -44,7 +45,7 @@ export function resourceToRow(resource: ResourceItem): DbResourceRow {
  */
 export async function fetchAllResources(): Promise<FetchResourcesResult> {
   if (!isSupabaseConfigured) {
-    return { resources: [], deletedIds: [], isInitialized: false };
+    return { resources: [], deletedIds: [], resourceOrder: [], isInitialized: false };
   }
 
   const { data, error } = await supabase
@@ -54,12 +55,13 @@ export async function fetchAllResources(): Promise<FetchResourcesResult> {
 
   if (error) {
     console.error('Failed to fetch resources from Supabase:', error.message);
-    return { resources: [], deletedIds: [], isInitialized: false };
+    return { resources: [], deletedIds: [], resourceOrder: [], isInitialized: false };
   }
 
   const rows = (data || []) as DbResourceRow[];
   let isInitialized = false;
   let deletedIds: string[] = [];
+  let resourceOrder: string[] = [];
   const activeDbResources: ResourceItem[] = [];
 
   for (const row of rows) {
@@ -68,6 +70,9 @@ export async function fetchAllResources(): Promise<FetchResourcesResult> {
       if (meta?.isInitialized) isInitialized = true;
       if (Array.isArray(meta?.deletedResourceIds)) {
         deletedIds = meta.deletedResourceIds;
+      }
+      if (Array.isArray(meta?.resourceOrder)) {
+        resourceOrder = meta.resourceOrder;
       }
     } else if (!row.id.startsWith('__sagemap_')) {
       const res = rowToResource(row);
@@ -103,13 +108,13 @@ export async function fetchAllResources(): Promise<FetchResourcesResult> {
         },
         { onConflict: 'id' }
       )
-      .then(() => {})
-      .catch((e) => console.warn('Failed to clean metadata tombstone in DB:', e));
+      .then(() => {}, (e) => console.warn('Failed to clean metadata tombstone in DB:', e));
   }
 
   return {
     resources: activeDbResources,
     deletedIds: cleanedDeletedIds,
+    resourceOrder,
     isInitialized
   };
 }
@@ -429,6 +434,53 @@ export async function syncAllResourcesToSupabase(resources: ResourceItem[]): Pro
 }
 
 /**
+ * Persists the customized drag-and-drop position order of resources to Supabase metadata.
+ */
+export async function saveResourceOrder(orderIds: string[]): Promise<boolean> {
+  if (!isSupabaseConfigured) return false;
+
+  try {
+    const { data: metaRow } = await supabase
+      .from('resources')
+      .select('data')
+      .eq('id', METADATA_ROW_ID)
+      .maybeSingle();
+
+    let currentMeta: any = { isInitialized: true, deletedResourceIds: [] };
+    if (metaRow?.data) {
+      currentMeta = metaRow.data;
+    }
+
+    const updatedMeta = {
+      ...currentMeta,
+      resourceOrder: orderIds,
+      lastSyncedAt: new Date().toISOString()
+    };
+
+    const { error } = await supabase
+      .from('resources')
+      .upsert(
+        {
+          id: METADATA_ROW_ID,
+          topic_id: 0,
+          data: updatedMeta,
+          updated_at: new Date().toISOString()
+        },
+        { onConflict: 'id' }
+      );
+
+    if (error) {
+      console.error('Failed to save resource order to Supabase:', error.message);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.error('Error saving resource order:', err);
+    return false;
+  }
+}
+
+/**
  * Subscribes to realtime updates on the 'resources' table.
  * Whenever an admin updates or deletes a resource, all connected clients are notified live.
  */
@@ -438,6 +490,7 @@ export function subscribeToResourceChanges(
     resource?: ResourceItem;
     oldId?: string;
     deletedIds?: string[];
+    resourceOrder?: string[];
   }) => void
 ): () => void {
   if (!isSupabaseConfigured) {
@@ -455,10 +508,11 @@ export function subscribeToResourceChanges(
         if (targetId === METADATA_ROW_ID) {
           if (payload.new) {
             const meta = (payload.new as any).data;
-            if (meta && Array.isArray(meta.deletedResourceIds)) {
+            if (meta) {
               onChange({
                 eventType: 'METADATA_UPDATE',
-                deletedIds: meta.deletedResourceIds
+                deletedIds: Array.isArray(meta.deletedResourceIds) ? meta.deletedResourceIds : [],
+                resourceOrder: Array.isArray(meta.resourceOrder) ? meta.resourceOrder : []
               });
             }
           }

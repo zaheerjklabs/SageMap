@@ -39,6 +39,8 @@ export interface ResourceItem {
   isCustom?: boolean;
   isEdited?: boolean;
   
+  positionIndex?: number;
+  
   imageUrl?: string;
   thumbnailUrl?: string;
   
@@ -149,4 +151,5 @@ export interface UserCollections {
   deletedResourceIds: Record<string, boolean>; // resourceId -> true if deleted
   topicNotes: Record<number, string>; // personal notes for learning topic
   lastVisitedTopicId: number;
+  resourceOrder?: string[]; // admin custom resource drag-and-drop ordering
 }

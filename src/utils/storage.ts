@@ -14,7 +14,8 @@ export const loadCollectionsFromStorage = (): UserCollections => {
         editedResources: parsed.editedResources || {},
         deletedResourceIds: parsed.deletedResourceIds || {},
         topicNotes: parsed.topicNotes || parsed.stepNotes || {},
-        lastVisitedTopicId: parsed.lastVisitedTopicId || 1
+        lastVisitedTopicId: parsed.lastVisitedTopicId || 1,
+        resourceOrder: Array.isArray(parsed.resourceOrder) ? parsed.resourceOrder : []
       };
     }
   } catch (e) {
@@ -26,7 +27,8 @@ export const loadCollectionsFromStorage = (): UserCollections => {
     editedResources: {},
     deletedResourceIds: {},
     topicNotes: {},
-    lastVisitedTopicId: 1
+    lastVisitedTopicId: 1,
+    resourceOrder: []
   };
 };
 

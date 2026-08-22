@@ -1,4 +1,4 @@
-import React, { Component, ErrorInfo, ReactNode, StrictMode } from 'react';
+import React, { ErrorInfo, ReactNode, StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App.tsx';
 import { AuthProvider } from './contexts/AuthContext';
@@ -13,7 +13,13 @@ interface ErrorBoundaryState {
   error: Error | null;
 }
 
-class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
+interface ErrorBoundary {
+  props: ErrorBoundaryProps;
+  state: ErrorBoundaryState;
+  setState(state: Partial<ErrorBoundaryState>): void;
+}
+
+class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
   public state: ErrorBoundaryState = {
     hasError: false,
     error: null

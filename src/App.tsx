@@ -12,6 +12,7 @@ import {
   fetchAllResources,
   upsertResource,
   deleteResource,
+  saveResourceOrder,
   seedResourcesIfEmpty,
   pushWebsiteStateToSupabase,
   subscribeToResourceChanges
@@ -79,6 +80,12 @@ export default function App() {
     setDbResources(result.resources);
     setDeletedResourceIds(result.deletedIds);
     setIsDbInitialized(result.isInitialized);
+    if (result.resourceOrder && result.resourceOrder.length > 0) {
+      setCollections((prev) => ({
+        ...prev,
+        resourceOrder: result.resourceOrder
+      }));
+    }
     return result;
   }, []);
 
@@ -89,16 +96,24 @@ export default function App() {
 
   // Subscribe to real-time updates from Supabase so all users see changes immediately
   useEffect(() => {
-    const unsubscribe = subscribeToResourceChanges(({ eventType, resource, oldId, deletedIds }) => {
+    const unsubscribe = subscribeToResourceChanges(({ eventType, resource, oldId, deletedIds, resourceOrder }) => {
       if (eventType === 'DELETE' && oldId) {
         setDbResources((prev) => prev.filter((r) => r.id !== oldId));
         setDeletedResourceIds((prev) => Array.from(new Set([...prev, oldId])));
-      } else if (eventType === 'METADATA_UPDATE' && deletedIds) {
-        setDeletedResourceIds(deletedIds);
-        setDbResources((prev) => {
-          const delSet = new Set(deletedIds);
-          return prev.filter((r) => !delSet.has(r.id));
-        });
+      } else if (eventType === 'METADATA_UPDATE') {
+        if (deletedIds) {
+          setDeletedResourceIds(deletedIds);
+          setDbResources((prev) => {
+            const delSet = new Set(deletedIds);
+            return prev.filter((r) => !delSet.has(r.id));
+          });
+        }
+        if (resourceOrder && resourceOrder.length > 0) {
+          setCollections((prev) => ({
+            ...prev,
+            resourceOrder
+          }));
+        }
       } else if (resource) {
         setDbResources((prev) => {
           const exists = prev.some((r) => r.id === resource.id);
@@ -245,6 +260,26 @@ export default function App() {
     setIsDeleteModalOpen(false);
   };
 
+  const handleReorderResources = async (newOrderIds: string[]) => {
+    if (!isAdmin) return;
+
+    // Optimistically update collections state
+    setCollections((prev) => ({
+      ...prev,
+      resourceOrder: newOrderIds
+    }));
+
+    showToast('Updating resource order...');
+
+    try {
+      await saveResourceOrder(newOrderIds);
+      showToast('Resource position order saved permanently to Supabase!');
+    } catch (err) {
+      console.error('Failed to save resource order:', err);
+      showToast('Failed to save resource order to database.');
+    }
+  };
+
   const handleFetchDb = async () => {
     setIsFetching(true);
     try {
@@ -389,6 +424,8 @@ export default function App() {
               onToggleSave={handleToggleSaveResource}
               onSelectTopic={handleSelectTopic}
               isAdmin={isAdmin}
+              resourceOrder={collections.resourceOrder}
+              onReorderResources={isAdmin ? handleReorderResources : undefined}
               onAddResourceClick={adminAddHandler}
               onEditResource={adminEditHandler}
               onDeleteResource={adminDeleteHandler}

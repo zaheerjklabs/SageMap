@@ -124,6 +124,34 @@ export function mergeTopicsWithDbResources(
 }
 
 /**
+ * Sorts resources based on custom admin resourceOrder array of resource IDs.
+ * Resources present in resourceOrder maintain their specified rank, while unlisted ones appear after.
+ */
+export function sortResourcesByOrder<T extends ResourceItem>(
+  resources: T[],
+  resourceOrder: string[] = []
+): T[] {
+  if (!resourceOrder || resourceOrder.length === 0) {
+    return resources;
+  }
+
+  const orderMap = new Map<string, number>();
+  resourceOrder.forEach((id, index) => {
+    orderMap.set(id, index);
+  });
+
+  return [...resources].sort((a, b) => {
+    const orderA = orderMap.has(a.id) ? orderMap.get(a.id)! : Number.MAX_SAFE_INTEGER;
+    const orderB = orderMap.has(b.id) ? orderMap.get(b.id)! : Number.MAX_SAFE_INTEGER;
+
+    if (orderA !== orderB) {
+      return orderA - orderB;
+    }
+    return 0;
+  });
+}
+
+/**
  * Resolves all resources across all topics with metadata for cataloging/filtering.
  */
 export function resolveAllCatalogResources(
@@ -131,7 +159,7 @@ export function resolveAllCatalogResources(
   collections: UserCollections
 ) {
   const resolvedTopics = resolveAllTopics(topics, collections);
-  return resolvedTopics.flatMap((topic) =>
+  const catalog = resolvedTopics.flatMap((topic) =>
     topic.resources.map((res) => ({
       ...res,
       topicNumber: topic.stepNumber,
@@ -139,4 +167,5 @@ export function resolveAllCatalogResources(
       topicCategory: topic.categoryLabel
     }))
   );
+  return sortResourcesByOrder(catalog, collections.resourceOrder);
 }

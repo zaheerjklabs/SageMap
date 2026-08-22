@@ -15,10 +15,13 @@ import {
   Layers, 
   Plus, 
   ExternalLink,
-  SlidersHorizontal
+  SlidersHorizontal,
+  GripVertical,
+  ArrowUpDown
 } from 'lucide-react';
 import { ROADMAP_TOPICS } from '../data/roadmapData';
 import { ResourceItem, ResourceType, DifficultyLevel, RoadmapTopic } from '../types';
+import { sortResourcesByOrder } from '../utils/resourceUtils';
 import { ResourceCard } from './ResourceCard';
 import { UdemyLogo } from './UdemyLogo';
 
@@ -28,6 +31,8 @@ interface ResourceExplorerViewProps {
   onToggleSave: (resourceId: string) => void;
   onSelectTopic: (topicId: number) => void;
   isAdmin?: boolean;
+  resourceOrder?: string[];
+  onReorderResources?: (newOrderIds: string[]) => void;
   onAddResourceClick?: () => void;
   onEditResource?: (resource: ResourceItem) => void;
   onDeleteResource?: (resource: ResourceItem) => void;
@@ -39,6 +44,8 @@ export const ResourceExplorerView: React.FC<ResourceExplorerViewProps> = ({
   onToggleSave,
   onSelectTopic,
   isAdmin = false,
+  resourceOrder = [],
+  onReorderResources,
   onAddResourceClick,
   onEditResource,
   onDeleteResource
@@ -49,9 +56,12 @@ export const ResourceExplorerView: React.FC<ResourceExplorerViewProps> = ({
   const [onlySaved, setOnlySaved] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>('');
 
-  // Collect all resources across all topics
+  const [draggedId, setDraggedId] = useState<string | null>(null);
+  const [dragOverId, setDragOverId] = useState<string | null>(null);
+
+  // Collect and sort all resources across all topics according to admin resourceOrder
   const allResources = useMemo(() => {
-    return topics.flatMap(topic => 
+    const flattened = topics.flatMap(topic => 
       topic.resources.map(res => ({
         ...res,
         topicNumber: topic.stepNumber,
@@ -59,7 +69,8 @@ export const ResourceExplorerView: React.FC<ResourceExplorerViewProps> = ({
         topicCategory: topic.categoryLabel
       }))
     );
-  }, [topics]);
+    return sortResourcesByOrder(flattened, resourceOrder);
+  }, [topics, resourceOrder]);
 
   // Filtered resources
   const filteredResources = useMemo(() => {
@@ -83,6 +94,58 @@ export const ResourceExplorerView: React.FC<ResourceExplorerViewProps> = ({
   }, [allResources, onlySaved, savedResources, selectedType, selectedTopicId, selectedDifficulty, searchQuery]);
 
   const savedCount = Object.keys(savedResources).filter(k => savedResources[k]).length;
+
+  // Drag and Drop handlers for Admin positioning
+  const handleDragStart = (e: React.DragEvent, id: string) => {
+    if (!isAdmin) return;
+    e.dataTransfer.setData('text/plain', id);
+    e.dataTransfer.effectAllowed = 'move';
+    setDraggedId(id);
+  };
+
+  const handleDragOver = (e: React.DragEvent, id: string) => {
+    if (!isAdmin) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    if (dragOverId !== id) {
+      setDragOverId(id);
+    }
+  };
+
+  const handleDragLeave = (e: React.DragEvent, id: string) => {
+    if (!isAdmin) return;
+    if (dragOverId === id) {
+      setDragOverId(null);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent, targetId: string) => {
+    if (!isAdmin || !onReorderResources) return;
+    e.preventDefault();
+    const sourceId = draggedId || e.dataTransfer.getData('text/plain');
+    setDraggedId(null);
+    setDragOverId(null);
+
+    if (!sourceId || sourceId === targetId) return;
+
+    // Get current full master ordering of all resources
+    const currentOrder = allResources.map((r) => r.id);
+    const fromIndex = currentOrder.indexOf(sourceId);
+    const toIndex = currentOrder.indexOf(targetId);
+
+    if (fromIndex === -1 || toIndex === -1) return;
+
+    const newOrder = [...currentOrder];
+    const [movedItem] = newOrder.splice(fromIndex, 1);
+    newOrder.splice(toIndex, 0, movedItem);
+
+    onReorderResources(newOrder);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedId(null);
+    setDragOverId(null);
+  };
 
   return (
     <div className="flex-1 h-full overflow-y-auto bg-[#090A0F] text-slate-100 p-6 custom-scrollbar font-sans">
@@ -130,6 +193,26 @@ export const ResourceExplorerView: React.FC<ResourceExplorerViewProps> = ({
             )}
           </div>
         </div>
+
+        {/* Admin Drag and Drop Notice Banner */}
+        {isAdmin && (
+          <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-bold flex items-center justify-between gap-3 shadow-lg backdrop-blur-md animate-fadeIn">
+            <div className="flex items-center gap-2.5">
+              <span className="p-1.5 rounded-lg bg-amber-500/20 border border-amber-500/40 text-amber-300">
+                <GripVertical className="w-4 h-4" />
+              </span>
+              <div>
+                <span className="font-extrabold uppercase tracking-wider text-[11px] text-amber-400 block">Admin Drag & Drop Mode Active</span>
+                <span className="text-slate-300 text-xs font-normal">
+                  Drag resource cards using the grip handle (⋮⋮) to customize positioning. Custom positions persist to Supabase DB and sync live to all users!
+                </span>
+              </div>
+            </div>
+            <span className="px-2.5 py-1 rounded-full text-[10px] font-mono bg-amber-400 text-slate-950 font-black shrink-0">
+              Live Order Sync
+            </span>
+          </div>
+        )}
 
         {/* Filter Controls Bar */}
         <div className="p-4 rounded-2xl bg-[#0D1117] border border-slate-800 shadow-xl space-y-3">
@@ -216,14 +299,27 @@ export const ResourceExplorerView: React.FC<ResourceExplorerViewProps> = ({
         {/* Resources Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredResources.map((res) => (
-            <ResourceCard
+            <div
               key={res.id}
-              resource={res}
-              isSaved={!!savedResources[res.id]}
-              onToggleSave={onToggleSave}
-              onEdit={onEditResource}
-              onDelete={onDeleteResource}
-            />
+              draggable={isAdmin}
+              onDragStart={(e) => handleDragStart(e, res.id)}
+              onDragOver={(e) => handleDragOver(e, res.id)}
+              onDragLeave={(e) => handleDragLeave(e, res.id)}
+              onDrop={(e) => handleDrop(e, res.id)}
+              onDragEnd={handleDragEnd}
+              className="h-full"
+            >
+              <ResourceCard
+                resource={res}
+                isSaved={!!savedResources[res.id]}
+                onToggleSave={onToggleSave}
+                onEdit={onEditResource}
+                onDelete={onDeleteResource}
+                isAdmin={isAdmin}
+                isDragging={draggedId === res.id}
+                isDragOver={dragOverId === res.id}
+              />
+            </div>
           ))}
         </div>
 

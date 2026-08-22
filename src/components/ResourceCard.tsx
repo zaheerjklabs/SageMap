@@ -14,7 +14,8 @@ import {
   User,
   Edit3,
   Trash2,
-  Code2
+  Code2,
+  GripVertical
 } from 'lucide-react';
 import { UdemyLogo } from './UdemyLogo';
 import { ResourceItem, ResourceType } from '../types';
@@ -26,6 +27,10 @@ interface ResourceCardProps {
   onEdit?: (resource: ResourceItem) => void;
   onDelete?: (resource: ResourceItem) => void;
   compact?: boolean;
+  isAdmin?: boolean;
+  isDragging?: boolean;
+  isDragOver?: boolean;
+  dragHandleProps?: React.HTMLAttributes<HTMLDivElement>;
 }
 
 export const getResourceThumbnail = (resource: ResourceItem): string => {
@@ -91,7 +96,11 @@ export const ResourceCard: React.FC<ResourceCardProps> = ({
   onToggleSave,
   onEdit,
   onDelete,
-  compact = false
+  compact = false,
+  isAdmin = false,
+  isDragging = false,
+  isDragOver = false,
+  dragHandleProps
 }) => {
   const getTypeBadge = (type: ResourceType) => {
     switch (type) {
@@ -175,13 +184,27 @@ export const ResourceCard: React.FC<ResourceCardProps> = ({
 
   return (
     <div
-      className={`group relative rounded-2xl bg-[#0D1117]/95 border ${badge.border} ${badge.glow} transition-all duration-300 hover:shadow-2xl hover:shadow-amber-500/10 hover:-translate-y-1 flex flex-col justify-between backdrop-blur-xl overflow-hidden ${
+      className={`group relative rounded-2xl bg-[#0D1117]/95 border ${badge.border} ${badge.glow} transition-all duration-300 hover:shadow-2xl hover:shadow-amber-500/10 ${
+        isDragging ? 'opacity-40 border-amber-400 shadow-2xl scale-[0.98]' : 'hover:-translate-y-1'
+      } ${
+        isDragOver ? 'ring-2 ring-cyan-400 ring-offset-2 ring-offset-slate-950 border-cyan-400 shadow-cyan-500/50 scale-[1.01]' : ''
+      } flex flex-col justify-between backdrop-blur-xl overflow-hidden ${
         compact ? 'p-0' : 'p-0'
       }`}
     >
-      {/* Top Header Badge Row (No overlapping image text!) */}
+      {/* Top Header Badge Row */}
       <div className="px-3.5 py-2.5 bg-slate-950/95 backdrop-blur-md border-b border-slate-800/80 flex items-center justify-between gap-2 flex-wrap">
         <div className="flex items-center gap-1.5 flex-wrap">
+          {isAdmin && (
+            <div
+              className="cursor-grab active:cursor-grabbing p-1 text-slate-500 hover:text-amber-400 rounded transition-colors"
+              title="Drag to reorder resource position"
+              {...dragHandleProps}
+            >
+              <GripVertical className="w-4 h-4" />
+            </div>
+          )}
+
           <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-extrabold uppercase tracking-wider ${badge.bg} border ${badge.border} shadow-sm`}>
             {badge.icon}
             <span className="truncate max-w-[140px]">{badge.label}</span>
