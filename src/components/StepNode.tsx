@@ -9,7 +9,6 @@ import {
   BookOpen, 
   ArrowRight, 
   Sparkles, 
-  HelpCircle, 
   Layers, 
   ChevronDown, 
   ChevronUp,
@@ -214,16 +213,6 @@ export const StepNode: React.FC<StepNodeProps> = ({
                 <span className="text-[11px]">Books</span>
               </span>
               <span className="font-bold">{bookResources.length}</span>
-            </div>
-          )}
-
-          {topic.interviewQuestions && topic.interviewQuestions.length > 0 && (
-            <div className="px-2.5 py-1.5 rounded-xl bg-yellow-500/15 border border-yellow-500/30 text-yellow-300 flex items-center justify-between">
-              <span className="flex items-center gap-1.5">
-                <HelpCircle className="w-3.5 h-3.5 text-yellow-400" />
-                <span className="text-[11px]">Q&A</span>
-              </span>
-              <span className="font-bold">{topic.interviewQuestions.length}</span>
             </div>
           )}
         </div>

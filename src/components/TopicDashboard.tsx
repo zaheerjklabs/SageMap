@@ -9,7 +9,6 @@ import {
   FileText, 
   BookOpen, 
   Newspaper, 
-  HelpCircle, 
   Wrench, 
   Search, 
   ExternalLink, 
@@ -45,7 +44,7 @@ interface TopicDashboardProps {
   onOpenSageAi?: (topicId: number) => void;
 }
 
-type TabType = 'all' | 'youtube' | 'github' | 'course' | 'project' | 'documentation' | 'paper' | 'book' | 'article' | 'interview' | 'tools';
+type TabType = 'all' | 'youtube' | 'github' | 'course' | 'project' | 'documentation' | 'paper' | 'book' | 'article' | 'tools';
 
 export const TopicDashboard: React.FC<TopicDashboardProps> = ({
   topic,
@@ -398,37 +397,6 @@ export const TopicDashboard: React.FC<TopicDashboardProps> = ({
               </div>
             )}
           </div>
-
-          {/* Interview Questions Section */}
-          {topic.interviewQuestions && topic.interviewQuestions.length > 0 && (
-            <div className="pt-4 border-t border-slate-800/80 space-y-3">
-              <h3 className="text-sm font-bold text-amber-400 uppercase tracking-wider flex items-center gap-2">
-                <HelpCircle className="w-4 h-4 text-amber-400" />
-                <span>Technical Interview Questions & Systems Design</span>
-              </h3>
-              <div className="space-y-3">
-                {topic.interviewQuestions.map((q, idx) => (
-                  <div
-                    key={idx}
-                    className="p-4 rounded-2xl bg-slate-950/80 border border-slate-800 space-y-2"
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <h4 className="text-xs font-bold text-slate-100">{q.question}</h4>
-                      <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-yellow-500/20 text-yellow-300 border border-yellow-500/30 shrink-0">
-                        {q.difficulty}
-                      </span>
-                    </div>
-                    <p className="text-xs text-slate-300 leading-relaxed">
-                      {q.answerSummary}
-                    </p>
-                    <div className="p-2.5 rounded-xl bg-slate-900 border border-slate-800 text-[11px] text-cyan-300 font-mono">
-                      💡 Key takeaway: {q.keyTakeaway}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
 
           {/* Useful Tools & Frameworks */}
           {topic.toolsAndFrameworks && topic.toolsAndFrameworks.length > 0 && (

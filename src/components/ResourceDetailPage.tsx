@@ -78,7 +78,7 @@ export const ResourceDetailPage: React.FC<ResourceDetailPageProps> = ({
   const [aiMessages, setAiMessages] = useState<Array<{ role: 'user' | 'assistant'; text: string }>>([
     {
       role: 'assistant',
-      text: `Hello! I'm SageAI. Ask me anything about **${resource.title}**, how to build it, architecture design, or interview questions!`
+      text: `Hello! I'm SageAI. Ask me anything about **${resource.title}**, implementation details, or architecture design!`
     }
   ]);
   const [isAiLoading, setIsAiLoading] = useState(false);
@@ -658,7 +658,7 @@ Provide a concise, practical, technical answer with clean Markdown formatting, c
                 <div className="flex items-center flex-wrap gap-2">
                   {[
                     'Explain the high-level architecture of this project',
-                    'What are 3 interview questions based on this resource?',
+                    'How would you architect and deploy this in production?',
                     'How do I run and test this code locally?',
                     'What are common pitfalls and optimization tips?'
                   ].map((chip, idx) => (
