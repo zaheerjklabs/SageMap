@@ -36,6 +36,7 @@ interface TopicDashboardProps {
   onToggleSave: (resourceId: string) => void;
   onEditResource?: (resource: ResourceItem) => void;
   onDeleteResource?: (resource: ResourceItem) => void;
+  onOpenResourceDetail?: (resource: ResourceItem) => void;
   topicNote: string;
   onSaveNote: (topicId: number, note: string) => void;
   onSelectTopic: (topicId: number) => void;
@@ -53,6 +54,7 @@ export const TopicDashboard: React.FC<TopicDashboardProps> = ({
   onToggleSave,
   onEditResource,
   onDeleteResource,
+  onOpenResourceDetail,
   topicNote,
   onSaveNote,
   onSelectTopic,
@@ -373,6 +375,7 @@ export const TopicDashboard: React.FC<TopicDashboardProps> = ({
                   onToggleSave={onToggleSave}
                   onEdit={onEditResource}
                   onDelete={onDeleteResource}
+                  onOpenDetail={onOpenResourceDetail}
                 />
               ))}
             </div>

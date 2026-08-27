@@ -24,10 +24,12 @@ import { CanvasView } from './components/CanvasView';
 import { CurriculumMatrixView } from './components/CurriculumMatrixView';
 import { ResourceExplorerView } from './components/ResourceExplorerView';
 import { TopicDashboard } from './components/TopicDashboard';
+import { ResourceDetailPage } from './components/ResourceDetailPage';
 import { ResourceModal } from './components/ResourceModal';
 import { DeleteConfirmModal } from './components/DeleteConfirmModal';
 import { AuthModal } from './components/AuthModal';
 import { SageAITutorDrawer } from './components/SageAITutorDrawer';
+import { parseResourceIdFromHash } from './utils/resourcePageUtils';
 import { Bot } from 'lucide-react';
 
 export default function App() {
@@ -40,6 +42,9 @@ export default function App() {
   const [viewMode, setViewMode] = useState<ViewMode>('canvas');
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(true);
   const [dashboardTopicId, setDashboardTopicId] = useState<number | null>(null);
+  const [selectedResourceId, setSelectedResourceId] = useState<string | null>(() => {
+    return parseResourceIdFromHash(window.location.hash);
+  });
 
   const [isSageAiOpen, setIsSageAiOpen] = useState<boolean>(false);
 
@@ -156,11 +161,85 @@ export default function App() {
     }
   }, [theme]);
 
+  // URL hash routing listener for deep-linking
+  useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash;
+      const resId = parseResourceIdFromHash(hash);
+      if (resId) {
+        setSelectedResourceId(resId);
+        return;
+      }
+      setSelectedResourceId(null);
+
+      const cleanHash = hash.replace(/^#\/?/, '').toLowerCase();
+      if (cleanHash === 'projects') {
+        setViewMode('projects');
+      } else if (cleanHash === 'courses') {
+        setViewMode('courses');
+      } else if (cleanHash === 'explorer' || cleanHash === 'resources') {
+        setViewMode('explorer');
+      } else if (cleanHash === 'matrix') {
+        setViewMode('matrix');
+      } else if (cleanHash === 'canvas' || cleanHash === 'roadmap') {
+        setViewMode('canvas');
+      }
+    };
+
+    window.addEventListener('hashchange', handleHashChange);
+    window.addEventListener('popstate', handleHashChange);
+
+    handleHashChange();
+
+    return () => {
+      window.removeEventListener('hashchange', handleHashChange);
+      window.removeEventListener('popstate', handleHashChange);
+    };
+  }, []);
+
   const deletedIdSet = useMemo(() => new Set(deletedResourceIds), [deletedResourceIds]);
 
   const resolvedTopics = useMemo(() => {
     return mergeTopicsWithDbResources(ROADMAP_TOPICS, dbResources, isDbInitialized, deletedIdSet);
   }, [dbResources, isDbInitialized, deletedIdSet]);
+
+  // Look up selected resource for dedicated Krish Naik style detail page
+  const selectedResourceData = useMemo(() => {
+    if (!selectedResourceId) return null;
+    for (const t of resolvedTopics) {
+      const found = t.resources.find((r) => r.id === selectedResourceId);
+      if (found) {
+        return { resource: found, parentTopic: t };
+      }
+    }
+    return null;
+  }, [selectedResourceId, resolvedTopics]);
+
+  const handleOpenResourceDetail = (resource: ResourceItem) => {
+    setSelectedResourceId(resource.id);
+    window.location.hash = `/resource/${resource.id}`;
+  };
+
+  const handleBackFromResourceDetail = () => {
+    setSelectedResourceId(null);
+    if (viewMode === 'projects') {
+      window.location.hash = '/projects';
+    } else if (viewMode === 'courses') {
+      window.location.hash = '/courses';
+    } else if (viewMode === 'matrix') {
+      window.location.hash = '/matrix';
+    } else if (viewMode === 'explorer') {
+      window.location.hash = '/explorer';
+    } else {
+      window.location.hash = '/canvas';
+    }
+  };
+
+  const handleViewModeChange = (mode: ViewMode) => {
+    setViewMode(mode);
+    setSelectedResourceId(null);
+    window.location.hash = `/${mode}`;
+  };
 
   const handleToggleSaveResource = (resourceId: string) => {
     setCollections((prev) => {
@@ -249,6 +328,9 @@ export default function App() {
     try {
       await deleteResource(resourceId, deletedResourceIds);
       showToast('Resource deleted permanently from Supabase.');
+      if (selectedResourceId === resourceId) {
+        setSelectedResourceId(null);
+      }
     } catch (err) {
       console.error('Failed to delete resource in Supabase:', err);
       const message = err instanceof Error ? err.message : 'Failed to delete resource';
@@ -356,7 +438,7 @@ export default function App() {
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
         viewMode={viewMode}
-        onViewModeChange={setViewMode}
+        onViewModeChange={handleViewModeChange}
         theme={theme}
         onToggleTheme={() => setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'))}
         savedResourcesCount={savedCount}
@@ -379,60 +461,128 @@ export default function App() {
         </div>
       )}
 
-      <div className="flex-1 flex overflow-hidden relative">
-        <Sidebar
-          currentTopicId={currentTopicId}
-          onSelectTopic={handleSelectTopic}
-          isOpen={isSidebarOpen}
-          onToggleOpen={() => setIsSidebarOpen((prev) => !prev)}
-          onOpenTopicDashboard={handleOpenTopicDashboard}
+      {/* RENDER DEDICATED RESOURCE DETAIL PAGE (KRISH NAIK STYLE) OR MASTER VIEW */}
+      {selectedResourceData ? (
+        <ResourceDetailPage
+          resource={selectedResourceData.resource}
+          parentTopic={selectedResourceData.parentTopic}
+          allTopics={resolvedTopics}
+          isSaved={!!collections.savedResources[selectedResourceData.resource.id]}
+          onToggleSave={handleToggleSaveResource}
+          onEdit={adminEditHandler}
+          onDelete={adminDeleteHandler}
+          onBack={handleBackFromResourceDetail}
+          onSelectTopic={(tId) => {
+            setCurrentTopicId(tId);
+            setDashboardTopicId(tId);
+            setSelectedResourceId(null);
+            window.location.hash = `/canvas`;
+          }}
+          onSelectResource={(r) => handleOpenResourceDetail(r)}
+          isAdmin={isAdmin}
+          onOpenSageAi={(tId) => {
+            setCurrentTopicId(tId);
+            setIsSageAiOpen(true);
+          }}
         />
+      ) : (
+        <div className="flex-1 flex overflow-hidden relative">
+          <Sidebar
+            currentTopicId={currentTopicId}
+            onSelectTopic={handleSelectTopic}
+            isOpen={isSidebarOpen}
+            onToggleOpen={() => setIsSidebarOpen((prev) => !prev)}
+            onOpenTopicDashboard={handleOpenTopicDashboard}
+          />
 
-        <main className="flex-1 flex flex-col overflow-hidden relative">
-          {(resourcesLoading || authLoading) && (
-            <div className="absolute top-3 right-3 z-20 px-3 py-1.5 rounded-lg bg-slate-900/90 border border-slate-800 text-xs text-slate-400">
-              Loading content...
-            </div>
-          )}
+          <main className="flex-1 flex flex-col overflow-hidden relative">
+            {(resourcesLoading || authLoading) && (
+              <div className="absolute top-3 right-3 z-20 px-3 py-1.5 rounded-lg bg-slate-900/90 border border-slate-800 text-xs text-slate-400">
+                Loading content...
+              </div>
+            )}
 
-          {viewMode === 'canvas' && (
-            <CanvasView
-              topics={resolvedTopics}
-              currentTopicId={currentTopicId}
-              onSelectTopic={handleSelectTopic}
-              onOpenDashboard={handleOpenTopicDashboard}
-              savedResources={collections.savedResources}
-              onToggleSave={handleToggleSaveResource}
-              onEditResource={adminEditHandler}
-              onDeleteResource={adminDeleteHandler}
-            />
-          )}
+            {viewMode === 'canvas' && (
+              <CanvasView
+                topics={resolvedTopics}
+                currentTopicId={currentTopicId}
+                onSelectTopic={handleSelectTopic}
+                onOpenDashboard={handleOpenTopicDashboard}
+                savedResources={collections.savedResources}
+                onToggleSave={handleToggleSaveResource}
+                onEditResource={adminEditHandler}
+                onDeleteResource={adminDeleteHandler}
+              />
+            )}
 
-          {viewMode === 'matrix' && (
-            <CurriculumMatrixView
-              topics={resolvedTopics}
-              onOpenTopicDashboard={handleOpenTopicDashboard}
-              savedResources={collections.savedResources}
-              onToggleSave={handleToggleSaveResource}
-            />
-          )}
+            {viewMode === 'matrix' && (
+              <CurriculumMatrixView
+                topics={resolvedTopics}
+                onOpenTopicDashboard={handleOpenTopicDashboard}
+                savedResources={collections.savedResources}
+                onToggleSave={handleToggleSaveResource}
+              />
+            )}
 
-          {viewMode === 'explorer' && (
-            <ResourceExplorerView
-              topics={resolvedTopics}
-              savedResources={collections.savedResources}
-              onToggleSave={handleToggleSaveResource}
-              onSelectTopic={handleSelectTopic}
-              isAdmin={isAdmin}
-              resourceOrder={collections.resourceOrder}
-              onReorderResources={isAdmin ? handleReorderResources : undefined}
-              onAddResourceClick={adminAddHandler}
-              onEditResource={adminEditHandler}
-              onDeleteResource={adminDeleteHandler}
-            />
-          )}
-        </main>
-      </div>
+            {viewMode === 'projects' && (
+              <ResourceExplorerView
+                topics={resolvedTopics}
+                savedResources={collections.savedResources}
+                onToggleSave={handleToggleSaveResource}
+                onSelectTopic={handleSelectTopic}
+                onOpenResourceDetail={handleOpenResourceDetail}
+                isAdmin={isAdmin}
+                resourceOrder={collections.resourceOrder}
+                onReorderResources={isAdmin ? handleReorderResources : undefined}
+                onAddResourceClick={adminAddHandler}
+                onEditResource={adminEditHandler}
+                onDeleteResource={adminDeleteHandler}
+                defaultType="project"
+                viewTitle="AI & Agentic Practical Projects"
+                viewSubtitle="Explore real-world end-to-end projects with code repositories, system architectures, and step-by-step implementation guides."
+              />
+            )}
+
+            {viewMode === 'courses' && (
+              <ResourceExplorerView
+                topics={resolvedTopics}
+                savedResources={collections.savedResources}
+                onToggleSave={handleToggleSaveResource}
+                onSelectTopic={handleSelectTopic}
+                onOpenResourceDetail={handleOpenResourceDetail}
+                isAdmin={isAdmin}
+                resourceOrder={collections.resourceOrder}
+                onReorderResources={isAdmin ? handleReorderResources : undefined}
+                onAddResourceClick={adminAddHandler}
+                onEditResource={adminEditHandler}
+                onDeleteResource={adminDeleteHandler}
+                defaultType="course"
+                viewTitle="Curated AI & ML Online Courses"
+                viewSubtitle="Masterclasses, specializations, and verified certifications from Coursera, Udemy, Fast.ai, and DeepLearning.AI."
+              />
+            )}
+
+            {viewMode === 'explorer' && (
+              <ResourceExplorerView
+                topics={resolvedTopics}
+                savedResources={collections.savedResources}
+                onToggleSave={handleToggleSaveResource}
+                onSelectTopic={handleSelectTopic}
+                onOpenResourceDetail={handleOpenResourceDetail}
+                isAdmin={isAdmin}
+                resourceOrder={collections.resourceOrder}
+                onReorderResources={isAdmin ? handleReorderResources : undefined}
+                onAddResourceClick={adminAddHandler}
+                onEditResource={adminEditHandler}
+                onDeleteResource={adminDeleteHandler}
+                defaultType="all"
+                viewTitle="AI & ML Resource Discovery Catalog"
+                viewSubtitle="Browse, search, and bookmark hundreds of courses, GitHub repositories, research papers, and technical deep-dives across all 10 mastery steps."
+              />
+            )}
+          </main>
+        </div>
+      )}
 
       <TopicDashboard
         topic={activeDashboardTopic}
@@ -442,6 +592,7 @@ export default function App() {
         onToggleSave={handleToggleSaveResource}
         onEditResource={adminEditHandler}
         onDeleteResource={adminDeleteHandler}
+        onOpenResourceDetail={handleOpenResourceDetail}
         topicNote={dashboardTopicId ? collections.topicNotes[dashboardTopicId] || '' : ''}
         onSaveNote={handleSaveNote}
         onSelectTopic={handleSelectTopic}

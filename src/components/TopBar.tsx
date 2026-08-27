@@ -16,7 +16,9 @@ import {
   CloudUpload,
   CloudDownload,
   Loader2,
-  Bot
+  Bot,
+  Code2,
+  GraduationCap
 } from 'lucide-react';
 import { ROADMAP_TOPICS, CATEGORY_DEFINITIONS } from '../data/roadmapData';
 import { ViewMode } from '../types';
@@ -217,6 +219,45 @@ export const TopBar: React.FC<TopBarProps> = ({
           </button>
 
           <button
+            onClick={() => onViewModeChange('projects')}
+            className={`px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all whitespace-nowrap ${
+              viewMode === 'projects'
+                ? 'bg-amber-500 text-slate-950 shadow-md font-black shadow-amber-500/20'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+            title="AI & Agentic Projects Catalog"
+          >
+            <Code2 className="w-3.5 h-3.5 shrink-0" />
+            <span className="hidden sm:inline">Projects</span>
+          </button>
+
+          <button
+            onClick={() => onViewModeChange('courses')}
+            className={`px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all whitespace-nowrap ${
+              viewMode === 'courses'
+                ? 'bg-amber-500 text-slate-950 shadow-md font-black shadow-amber-500/20'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+            title="Online Courses & Certifications"
+          >
+            <GraduationCap className="w-3.5 h-3.5 shrink-0" />
+            <span className="hidden sm:inline">Courses</span>
+          </button>
+
+          <button
+            onClick={() => onViewModeChange('explorer')}
+            className={`px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all whitespace-nowrap ${
+              viewMode === 'explorer'
+                ? 'bg-amber-500 text-slate-950 shadow-md font-black shadow-amber-500/20'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+            title="All Resources Discovery Catalog"
+          >
+            <Sparkles className="w-3.5 h-3.5 shrink-0" />
+            <span className="hidden sm:inline">All Resources</span>
+          </button>
+
+          <button
             onClick={() => onViewModeChange('matrix')}
             className={`px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all whitespace-nowrap ${
               viewMode === 'matrix'
@@ -227,19 +268,6 @@ export const TopBar: React.FC<TopBarProps> = ({
           >
             <ListOrdered className="w-3.5 h-3.5 shrink-0" />
             <span className="hidden sm:inline">Matrix</span>
-          </button>
-
-          <button
-            onClick={() => onViewModeChange('explorer')}
-            className={`px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all whitespace-nowrap ${
-              viewMode === 'explorer'
-                ? 'bg-amber-500 text-slate-950 shadow-md font-black shadow-amber-500/20'
-                : 'text-slate-400 hover:text-slate-200'
-            }`}
-            title="Resource Discovery Catalog"
-          >
-            <Sparkles className="w-3.5 h-3.5 shrink-0" />
-            <span className="hidden sm:inline">Explorer</span>
           </button>
         </div>
 

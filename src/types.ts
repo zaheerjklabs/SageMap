@@ -84,6 +84,19 @@ export interface ResourceItem {
   // Article specific
   publication?: string;
   readTime?: string;
+
+  // Rich Page Details (Krish Naik Style)
+  learningOutcomes?: string[];
+  prerequisites?: string[];
+  curriculumModules?: {
+    title: string;
+    duration?: string;
+    description?: string;
+    topics?: string[];
+  }[];
+  architectureNotes?: string;
+  keyHighlights?: string[];
+  overviewBreakdown?: string[];
 }
 
 export interface CoreConcept {
@@ -142,7 +155,14 @@ export interface CanvasTransform {
   scale: number;
 }
 
-export type ViewMode = 'canvas' | 'matrix' | 'explorer';
+export type ViewMode = 
+  | 'canvas' 
+  | 'matrix' 
+  | 'explorer' 
+  | 'projects' 
+  | 'courses' 
+  | 'github' 
+  | 'literature';
 
 export interface UserCollections {
   savedResources: Record<string, boolean>; // resourceId -> true (bookmarked / saved to collection)

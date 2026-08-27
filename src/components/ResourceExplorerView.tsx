@@ -30,12 +30,16 @@ interface ResourceExplorerViewProps {
   savedResources: Record<string, boolean>;
   onToggleSave: (resourceId: string) => void;
   onSelectTopic: (topicId: number) => void;
+  onOpenResourceDetail?: (resource: ResourceItem) => void;
   isAdmin?: boolean;
   resourceOrder?: string[];
   onReorderResources?: (newOrderIds: string[]) => void;
   onAddResourceClick?: () => void;
   onEditResource?: (resource: ResourceItem) => void;
   onDeleteResource?: (resource: ResourceItem) => void;
+  defaultType?: string;
+  viewTitle?: string;
+  viewSubtitle?: string;
 }
 
 export const ResourceExplorerView: React.FC<ResourceExplorerViewProps> = ({
@@ -43,18 +47,29 @@ export const ResourceExplorerView: React.FC<ResourceExplorerViewProps> = ({
   savedResources,
   onToggleSave,
   onSelectTopic,
+  onOpenResourceDetail,
   isAdmin = false,
   resourceOrder = [],
   onReorderResources,
   onAddResourceClick,
   onEditResource,
-  onDeleteResource
+  onDeleteResource,
+  defaultType = 'all',
+  viewTitle = 'Resource Discovery Catalog',
+  viewSubtitle = 'Browse and filter learning resources across the curriculum.'
 }) => {
-  const [selectedType, setSelectedType] = useState<string>('all');
+  const [selectedType, setSelectedType] = useState<string>(defaultType);
   const [selectedTopicId, setSelectedTopicId] = useState<number | 'all'>('all');
   const [selectedDifficulty, setSelectedDifficulty] = useState<string>('all');
   const [onlySaved, setOnlySaved] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>('');
+
+  // Synchronize defaultType when viewMode changes
+  React.useEffect(() => {
+    if (defaultType && defaultType !== selectedType) {
+      setSelectedType(defaultType);
+    }
+  }, [defaultType]);
 
   const [draggedId, setDraggedId] = useState<string | null>(null);
   const [dragOverId, setDragOverId] = useState<string | null>(null);
@@ -154,18 +169,18 @@ export const ResourceExplorerView: React.FC<ResourceExplorerViewProps> = ({
         <div className="p-6 rounded-3xl bg-[#0D1117] border border-slate-800 shadow-2xl flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div>
             <div className="flex items-center gap-2 mb-2">
-              <span className="px-3 py-0.5 rounded-full text-xs font-mono font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/40">
-                Resource Discovery Catalog
+              <span className="px-3 py-0.5 rounded-full text-xs font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                {viewTitle}
               </span>
               <span className="text-xs font-bold text-slate-400 font-mono">
-                {allResources.length} Total Curated Assets
+                {filteredResources.length} of {allResources.length} Assets
               </span>
             </div>
             <h2 className="text-2xl lg:text-3xl font-extrabold text-white tracking-tight">
-              AI/ML Learning Hub & Resource Discovery
+              {viewTitle}
             </h2>
-            <p className="text-xs lg:text-sm text-slate-300 mt-1 max-w-2xl leading-relaxed">
-              Explore gold-standard GitHub repositories, YouTube courses, seminal research papers, books, and real-world projects across all 10 learning phases.
+            <p className="text-xs text-slate-400 mt-1 max-w-xl">
+              {viewSubtitle}
             </p>
           </div>
 
@@ -315,6 +330,7 @@ export const ResourceExplorerView: React.FC<ResourceExplorerViewProps> = ({
                 onToggleSave={onToggleSave}
                 onEdit={onEditResource}
                 onDelete={onDeleteResource}
+                onOpenDetail={onOpenResourceDetail}
                 isAdmin={isAdmin}
                 isDragging={draggedId === res.id}
                 isDragOver={dragOverId === res.id}

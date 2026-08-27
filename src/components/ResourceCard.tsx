@@ -26,6 +26,7 @@ interface ResourceCardProps {
   onToggleSave?: (resourceId: string) => void;
   onEdit?: (resource: ResourceItem) => void;
   onDelete?: (resource: ResourceItem) => void;
+  onOpenDetail?: (resource: ResourceItem) => void;
   compact?: boolean;
   isAdmin?: boolean;
   isDragging?: boolean;
@@ -96,6 +97,7 @@ export const ResourceCard: React.FC<ResourceCardProps> = ({
   onToggleSave,
   onEdit,
   onDelete,
+  onOpenDetail,
   compact = false,
   isAdmin = false,
   isDragging = false,
@@ -182,9 +184,18 @@ export const ResourceCard: React.FC<ResourceCardProps> = ({
   const badge = getTypeBadge(resource.type);
   const thumbnailUrl = getResourceThumbnail(resource);
 
+  const handleCardClick = () => {
+    if (onOpenDetail) {
+      onOpenDetail(resource);
+    } else {
+      window.location.hash = `/resource/${resource.id}`;
+    }
+  };
+
   return (
     <div
-      className={`group relative rounded-2xl bg-[#0D1117]/95 border ${badge.border} ${badge.glow} transition-all duration-300 hover:shadow-2xl hover:shadow-amber-500/10 ${
+      onClick={handleCardClick}
+      className={`group relative rounded-2xl bg-[#0D1117]/95 border ${badge.border} ${badge.glow} transition-all duration-300 hover:shadow-2xl hover:shadow-amber-500/10 cursor-pointer ${
         isDragging ? 'opacity-40 border-amber-400 shadow-2xl scale-[0.98]' : 'hover:-translate-y-1'
       } ${
         isDragOver ? 'ring-2 ring-cyan-400 ring-offset-2 ring-offset-slate-950 border-cyan-400 shadow-cyan-500/50 scale-[1.01]' : ''
@@ -199,6 +210,7 @@ export const ResourceCard: React.FC<ResourceCardProps> = ({
             <div
               className="cursor-grab active:cursor-grabbing p-1 text-slate-500 hover:text-amber-400 rounded transition-colors"
               title="Drag to reorder resource position"
+              onClick={(e) => e.stopPropagation()}
               {...dragHandleProps}
             >
               <GripVertical className="w-4 h-4" />
@@ -300,14 +312,9 @@ export const ResourceCard: React.FC<ResourceCardProps> = ({
           </div>
 
           {/* Title */}
-          <a
-            href={resource.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-sm font-extrabold text-slate-100 group-hover:text-amber-300 transition-colors leading-snug line-clamp-2 block"
-          >
+          <h3 className="text-sm font-extrabold text-slate-100 group-hover:text-amber-300 transition-colors leading-snug line-clamp-2 block">
             {resource.title}
-          </a>
+          </h3>
 
           {/* Description */}
           <p className="text-xs text-slate-400 mt-2 leading-relaxed line-clamp-2">
@@ -351,15 +358,10 @@ export const ResourceCard: React.FC<ResourceCardProps> = ({
             {resource.type}
           </span>
 
-          <a
-            href={resource.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700/80 hover:border-amber-400/60 text-xs font-bold text-slate-200 group-hover:text-amber-300 transition-all shadow-sm"
-          >
+          <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900 group-hover:bg-amber-400 group-hover:text-slate-950 border border-slate-700/80 group-hover:border-amber-400 text-xs font-bold text-slate-200 transition-all shadow-sm">
             <span>View Details</span>
-            <ExternalLink className="w-3 h-3 text-amber-400 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
-          </a>
+            <ExternalLink className="w-3 h-3 text-amber-400 group-hover:text-slate-950 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+          </div>
         </div>
       </div>
     </div>
