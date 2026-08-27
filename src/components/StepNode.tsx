@@ -228,7 +228,7 @@ export const StepNode: React.FC<StepNodeProps> = ({
             className="text-xs font-bold text-amber-400 hover:text-amber-300 flex items-center gap-1.5 transition-colors"
           >
             <Layers className="w-4 h-4" />
-            <span>Open Learning Hub</span>
+            <span>View Details</span>
             <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
           </button>
 

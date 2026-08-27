@@ -15,6 +15,7 @@ export interface FetchResourcesResult {
   resources: ResourceItem[];
   deletedIds: string[];
   resourceOrder: string[];
+  topicOverrides?: Record<number, any>;
   isInitialized: boolean;
 }
 
@@ -62,6 +63,7 @@ export async function fetchAllResources(): Promise<FetchResourcesResult> {
   let isInitialized = false;
   let deletedIds: string[] = [];
   let resourceOrder: string[] = [];
+  let topicOverrides: Record<number, any> = {};
   const activeDbResources: ResourceItem[] = [];
 
   for (const row of rows) {
@@ -73,6 +75,9 @@ export async function fetchAllResources(): Promise<FetchResourcesResult> {
       }
       if (Array.isArray(meta?.resourceOrder)) {
         resourceOrder = meta.resourceOrder;
+      }
+      if (meta?.topicOverrides && typeof meta.topicOverrides === 'object') {
+        topicOverrides = meta.topicOverrides;
       }
     } else if (!row.id.startsWith('__sagemap_')) {
       const res = rowToResource(row);
@@ -91,30 +96,11 @@ export async function fetchAllResources(): Promise<FetchResourcesResult> {
   const dbIdSet = new Set(activeDbResources.map((r) => r.id));
   const cleanedDeletedIds = deletedIds.filter((id) => !dbIdSet.has(id));
 
-  // If deletedIds contained active DB IDs, clean up metadata in DB in background
-  if (cleanedDeletedIds.length !== deletedIds.length) {
-    supabase
-      .from('resources')
-      .upsert(
-        {
-          id: METADATA_ROW_ID,
-          topic_id: 0,
-          data: {
-            isInitialized: true,
-            deletedResourceIds: cleanedDeletedIds,
-            lastSyncedAt: new Date().toISOString()
-          } as any,
-          updated_at: new Date().toISOString()
-        },
-        { onConflict: 'id' }
-      )
-      .then(() => {}, (e) => console.warn('Failed to clean metadata tombstone in DB:', e));
-  }
-
   return {
     resources: activeDbResources,
     deletedIds: cleanedDeletedIds,
     resourceOrder,
+    topicOverrides,
     isInitialized
   };
 }
@@ -349,7 +335,8 @@ export async function seedResourcesIfEmpty(resources: ResourceItem[]): Promise<b
 export async function pushWebsiteStateToSupabase(
   activeResources: ResourceItem[],
   existingDeletedIds: string[] = [],
-  resourceOrder: string[] = []
+  resourceOrder: string[] = [],
+  topicOverrides?: Record<number, any>
 ): Promise<boolean> {
   if (!isSupabaseConfigured) return false;
 
@@ -394,23 +381,30 @@ export async function pushWebsiteStateToSupabase(
       await syncAllResourcesToSupabase(activeResources);
     }
 
-    // 3. Resolve resourceOrder (use passed array or retrieve existing from DB)
+    // 3. Resolve resourceOrder & topicOverrides (use passed or retrieve existing from DB)
     let finalOrder = [...resourceOrder];
-    if (finalOrder.length === 0) {
-      const { data: metaRow } = await supabase
-        .from('resources')
-        .select('data')
-        .eq('id', METADATA_ROW_ID)
-        .maybeSingle();
-      if (metaRow?.data && Array.isArray((metaRow.data as any).resourceOrder)) {
-        finalOrder = (metaRow.data as any).resourceOrder;
+    let finalOverrides = topicOverrides || {};
+
+    const { data: metaRow } = await supabase
+      .from('resources')
+      .select('data')
+      .eq('id', METADATA_ROW_ID)
+      .maybeSingle();
+
+    if (metaRow?.data) {
+      const metaData = metaRow.data as any;
+      if (finalOrder.length === 0 && Array.isArray(metaData.resourceOrder)) {
+        finalOrder = metaData.resourceOrder;
+      }
+      if (!topicOverrides && metaData.topicOverrides) {
+        finalOverrides = metaData.topicOverrides;
       }
     }
 
     // Clean deleted items from finalOrder
     const finalCleanedOrder = finalOrder.filter((id) => activeIds.has(id));
 
-    // 4. Persist system metadata including resource order
+    // 4. Persist system metadata including resource order and topic overrides
     await supabase
       .from('resources')
       .upsert(
@@ -421,6 +415,7 @@ export async function pushWebsiteStateToSupabase(
             isInitialized: true,
             deletedResourceIds: cleanedDeleted,
             resourceOrder: finalCleanedOrder,
+            topicOverrides: finalOverrides,
             lastSyncedAt: new Date().toISOString()
           } as any,
           updated_at: new Date().toISOString()

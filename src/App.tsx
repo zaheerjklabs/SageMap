@@ -107,6 +107,15 @@ export default function App() {
         return updated;
       });
     }
+    if (result.topicOverrides && Object.keys(result.topicOverrides).length > 0) {
+      setTopicOverrides((prev) => {
+        const merged = { ...result.topicOverrides, ...prev };
+        try {
+          localStorage.setItem('sagemap_topic_overrides', JSON.stringify(merged));
+        } catch (e) {}
+        return merged;
+      });
+    }
     return result;
   }, []);
 
@@ -253,7 +262,11 @@ export default function App() {
           shortSubtitle: updatedTopic.shortSubtitle,
           categoryLabel: updatedTopic.categoryLabel,
           overview: updatedTopic.overview,
-          stepNumber: updatedTopic.stepNumber
+          stepNumber: updatedTopic.stepNumber,
+          recommendedOrder: updatedTopic.recommendedOrder,
+          coreConcepts: updatedTopic.coreConcepts,
+          subtopics: updatedTopic.subtopics,
+          toolsAndFrameworks: updatedTopic.toolsAndFrameworks
         }
       };
       try {
@@ -263,6 +276,7 @@ export default function App() {
       }
       return next;
     });
+    showToast(`Saved curriculum changes for Step ${updatedTopic.stepNumber}!`);
   };
 
   // Look up selected resource for dedicated Krish Naik style detail page
@@ -435,7 +449,8 @@ export default function App() {
       const success = await pushWebsiteStateToSupabase(
         currentActiveResources,
         deletedResourceIds,
-        collections.resourceOrder
+        collections.resourceOrder,
+        topicOverrides
       );
       if (success) {
         await refreshResources();

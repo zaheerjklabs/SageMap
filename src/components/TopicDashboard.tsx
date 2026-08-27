@@ -170,10 +170,22 @@ export const TopicDashboard: React.FC<TopicDashboardProps> = ({
         <div className="flex-1 overflow-y-auto p-6 space-y-8 custom-scrollbar">
           {/* Recommended Learning Path Order */}
           <div className="p-5 rounded-2xl bg-slate-950/60 border border-slate-800/80 shadow-lg">
-            <h3 className="text-sm font-bold text-amber-400 uppercase tracking-wider flex items-center gap-2 mb-3">
-              <ListOrdered className="w-4 h-4 text-amber-400" />
-              <span>Recommended Learning Order</span>
-            </h3>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-bold text-amber-400 uppercase tracking-wider flex items-center gap-2">
+                <ListOrdered className="w-4 h-4 text-amber-400" />
+                <span>Recommended Learning Order</span>
+              </h3>
+              {onEditTopic && (
+                <button
+                  onClick={() => onEditTopic(topic)}
+                  className="px-2 py-1 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 text-[11px] font-bold flex items-center gap-1 border border-amber-500/30 transition-colors"
+                  title="Admin: Edit Recommended Learning Sequence"
+                >
+                  <Edit3 className="w-3 h-3" />
+                  <span>Edit Order</span>
+                </button>
+              )}
+            </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
               {topic.recommendedOrder.map((step, idx) => (
                 <div
@@ -191,10 +203,22 @@ export const TopicDashboard: React.FC<TopicDashboardProps> = ({
 
           {/* Core Concepts Grid */}
           <div>
-            <h3 className="text-sm font-bold text-slate-100 uppercase tracking-wider flex items-center gap-2 mb-3">
-              <Layers className="w-4 h-4 text-cyan-400" />
-              <span>What to Learn & Core Concepts ({topic.coreConcepts.length})</span>
-            </h3>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-bold text-slate-100 uppercase tracking-wider flex items-center gap-2">
+                <Layers className="w-4 h-4 text-cyan-400" />
+                <span>What to Learn & Core Concepts ({topic.coreConcepts.length})</span>
+              </h3>
+              {onEditTopic && (
+                <button
+                  onClick={() => onEditTopic(topic)}
+                  className="px-2 py-1 rounded-lg bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 text-[11px] font-bold flex items-center gap-1 border border-cyan-500/30 transition-colors"
+                  title="Admin: Edit Core Concepts"
+                >
+                  <Edit3 className="w-3 h-3" />
+                  <span>Edit Concepts</span>
+                </button>
+              )}
+            </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {topic.coreConcepts.map((concept, idx) => (
                 <div
@@ -218,10 +242,22 @@ export const TopicDashboard: React.FC<TopicDashboardProps> = ({
           {/* Subtopics Breakdown */}
           {topic.subtopics && topic.subtopics.length > 0 && (
             <div>
-              <h3 className="text-sm font-bold text-slate-100 uppercase tracking-wider flex items-center gap-2 mb-3">
-                <FileCode2 className="w-4 h-4 text-purple-400" />
-                <span>Curriculum Subtopics ({topic.subtopics.length})</span>
-              </h3>
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-bold text-slate-100 uppercase tracking-wider flex items-center gap-2">
+                  <FileCode2 className="w-4 h-4 text-purple-400" />
+                  <span>Curriculum Subtopics ({topic.subtopics.length})</span>
+                </h3>
+                {onEditTopic && (
+                  <button
+                    onClick={() => onEditTopic(topic)}
+                    className="px-2 py-1 rounded-lg bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 text-[11px] font-bold flex items-center gap-1 border border-purple-500/30 transition-colors"
+                    title="Admin: Edit Curriculum Subtopics"
+                  >
+                    <Edit3 className="w-3 h-3" />
+                    <span>Edit Subtopics</span>
+                  </button>
+                )}
+              </div>
               <div className="space-y-2.5">
                 {topic.subtopics.map((sub) => (
                   <div
@@ -401,10 +437,22 @@ export const TopicDashboard: React.FC<TopicDashboardProps> = ({
           {/* Useful Tools & Frameworks */}
           {topic.toolsAndFrameworks && topic.toolsAndFrameworks.length > 0 && (
             <div className="pt-4 border-t border-slate-800/80 space-y-3">
-              <h3 className="text-sm font-bold text-purple-400 uppercase tracking-wider flex items-center gap-2">
-                <Wrench className="w-4 h-4 text-purple-400" />
-                <span>Industry Frameworks & Developer Tools</span>
-              </h3>
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-bold text-purple-400 uppercase tracking-wider flex items-center gap-2">
+                  <Wrench className="w-4 h-4 text-purple-400" />
+                  <span>Industry Frameworks & Developer Tools</span>
+                </h3>
+                {onEditTopic && (
+                  <button
+                    onClick={() => onEditTopic(topic)}
+                    className="px-2 py-1 rounded-lg bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 text-[11px] font-bold flex items-center gap-1 border border-purple-500/30 transition-colors"
+                    title="Admin: Edit Industry Frameworks & Tools"
+                  >
+                    <Edit3 className="w-3 h-3" />
+                    <span>Edit Tools</span>
+                  </button>
+                )}
+              </div>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 {topic.toolsAndFrameworks.map((tool, idx) => (
                   <a

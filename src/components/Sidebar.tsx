@@ -165,7 +165,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     }}
                     className="w-full py-1.5 rounded-xl bg-amber-500/15 hover:bg-amber-500 hover:text-slate-950 text-amber-300 text-xs font-bold transition-all flex items-center justify-center gap-1.5 border border-amber-500/35 shadow-sm"
                   >
-                    <span>Open Learning Hub</span>
+                    <span>View Details</span>
                     <ArrowRight className="w-3.5 h-3.5" />
                   </button>
                 </div>
