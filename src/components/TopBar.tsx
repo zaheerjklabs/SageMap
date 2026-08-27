@@ -1,14 +1,10 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { 
-  Compass, 
-  Search, 
   Sun, 
   Moon, 
   Sparkles, 
   Layers, 
-  ListOrdered, 
   Plus, 
-  ChevronDown, 
   Github,
   LogIn,
   LogOut,
@@ -18,9 +14,13 @@ import {
   Loader2,
   Bot,
   Code2,
-  GraduationCap
+  GraduationCap,
+  Tv,
+  FileText,
+  BookOpen,
+  Newspaper
 } from 'lucide-react';
-import { ROADMAP_TOPICS, CATEGORY_DEFINITIONS } from '../data/roadmapData';
+import { ROADMAP_TOPICS } from '../data/roadmapData';
 import { ViewMode } from '../types';
 
 interface TopBarProps {
@@ -70,16 +70,14 @@ export const TopBar: React.FC<TopBarProps> = ({
   isFetching = false,
   onOpenSageAi
 }) => {
-  const [showPathfinder, setShowPathfinder] = useState(false);
-  const [showCategoryMenu, setShowCategoryMenu] = useState(false);
-
-  const currentTopic = ROADMAP_TOPICS.find(t => t.id === currentTopicId);
-
   return (
     <header className="h-16 min-h-[64px] border-b border-slate-800/80 flex items-center justify-between px-3 md:px-5 bg-[#0D1117]/85 backdrop-blur-xl shrink-0 text-slate-300 font-sans z-30 sticky top-0 transition-colors gap-2 md:gap-4 select-none shadow-lg shadow-black/40">
-      {/* Left: Branding & Pathfinder */}
+      {/* Left: Branding */}
       <div className="flex items-center gap-2.5 md:gap-3.5 shrink-0">
-        <div className="flex items-center gap-2.5 shrink-0 group cursor-pointer">
+        <div 
+          onClick={() => onViewModeChange('canvas')}
+          className="flex items-center gap-2.5 shrink-0 group cursor-pointer"
+        >
           <div className="bg-gradient-to-tr from-amber-500 via-amber-400 to-cyan-500 p-2 rounded-xl text-slate-950 shadow-md shadow-amber-500/25 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform duration-300">
             <svg className="w-5 h-5 font-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M13 10V3L4 14h7v7l9-11h-7z" />
@@ -99,94 +97,131 @@ export const TopBar: React.FC<TopBarProps> = ({
             </p>
           </div>
         </div>
+      </div>
 
-        {/* Pathfinder Dropdown */}
-        <div className="relative shrink-0">
+      {/* Middle: Navigation Bar with Dedicated Category Tabs */}
+      <div className="flex-1 flex items-center justify-center overflow-x-auto custom-scrollbar px-2">
+        <div className="bg-slate-900/90 border border-slate-700/60 p-1 rounded-2xl flex items-center gap-1 shrink-0 shadow-inner">
           <button
-            onClick={() => setShowPathfinder(!showPathfinder)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900/90 hover:bg-slate-800/90 border border-slate-700/60 text-xs font-bold text-slate-200 transition-all shadow-sm whitespace-nowrap hover:border-amber-500/40"
-            title="Jump to Topic"
+            onClick={() => onViewModeChange('canvas')}
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all whitespace-nowrap ${
+              viewMode === 'canvas'
+                ? 'bg-amber-500 text-slate-950 shadow-md font-black shadow-amber-500/20'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+            }`}
+            title="Interactive Visual Roadmap Flowchart"
           >
-            <Compass className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-            <span className="hidden xl:inline text-slate-400 font-normal">Jump:</span>
-            <span className="font-bold text-amber-300 truncate max-w-[110px] md:max-w-[150px]">
-              {currentTopic ? `Step ${currentTopic.stepNumber}: ${currentTopic.title}` : 'Jump to Step'}
-            </span>
-            <ChevronDown className="w-3 h-3 text-slate-400 ml-0.5 shrink-0" />
+            <Layers className="w-3.5 h-3.5 shrink-0" />
+            <span>Roadmap</span>
           </button>
 
-          {showPathfinder && (
-            <>
-              <div 
-                className="fixed inset-0 z-40" 
-                onClick={() => setShowPathfinder(false)} 
-              />
-              <div className="absolute left-0 mt-2 w-80 max-h-96 overflow-y-auto rounded-2xl bg-[#0D1117]/95 backdrop-blur-2xl border border-slate-700/80 shadow-2xl p-2 z-50 divide-y divide-slate-800/80 custom-scrollbar">
-                <div className="px-2.5 py-1.5 text-[10px] font-extrabold text-slate-400 uppercase tracking-widest flex items-center justify-between">
-                  <span>Curriculum Topics</span>
-                  <span className="px-1.5 py-0.5 rounded bg-slate-800 text-amber-400 font-mono text-[9px]">
-                    {ROADMAP_TOPICS.length} Steps
-                  </span>
-                </div>
-                <div className="py-1 space-y-1">
-                  {ROADMAP_TOPICS.map((topic) => (
-                    <button
-                      key={topic.id}
-                      onClick={() => {
-                        onSelectTopic(topic.id);
-                        setShowPathfinder(false);
-                      }}
-                      className={`w-full text-left px-3 py-2 rounded-xl text-xs flex items-center justify-between transition-all ${
-                        currentTopicId === topic.id
-                          ? 'bg-amber-500/20 text-amber-300 font-bold border border-amber-500/40 shadow-sm'
-                          : 'text-slate-300 hover:bg-slate-800/80 hover:text-white'
-                      }`}
-                    >
-                      <div className="flex items-center gap-2.5 truncate">
-                        <span className="px-2 py-0.5 rounded-md text-[10px] font-mono font-bold bg-slate-800 text-amber-400 border border-slate-700">
-                          {topic.stepNumber}
-                        </span>
-                        <span className="truncate">{topic.title}</span>
-                      </div>
-                      <span className="text-[10px] text-slate-500 font-mono">
-                        {topic.resources.length} res
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </>
-          )}
+          <button
+            onClick={() => onViewModeChange('projects')}
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all whitespace-nowrap ${
+              viewMode === 'projects'
+                ? 'bg-amber-500 text-slate-950 shadow-md font-black shadow-amber-500/20'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+            }`}
+            title="Hands-on AI & Agentic Projects"
+          >
+            <Code2 className="w-3.5 h-3.5 shrink-0 text-amber-400" />
+            <span>Projects</span>
+          </button>
+
+          <button
+            onClick={() => onViewModeChange('courses')}
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all whitespace-nowrap ${
+              viewMode === 'courses'
+                ? 'bg-amber-500 text-slate-950 shadow-md font-black shadow-amber-500/20'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+            }`}
+            title="Curated Online Courses & Certifications"
+          >
+            <GraduationCap className="w-3.5 h-3.5 shrink-0 text-purple-400" />
+            <span>Courses</span>
+          </button>
+
+          <button
+            onClick={() => onViewModeChange('youtube')}
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all whitespace-nowrap ${
+              viewMode === 'youtube'
+                ? 'bg-amber-500 text-slate-950 shadow-md font-black shadow-amber-500/20'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+            }`}
+            title="YouTube Masterclasses & Video Playlists"
+          >
+            <Tv className="w-3.5 h-3.5 shrink-0 text-red-400" />
+            <span>YouTube</span>
+          </button>
+
+          <button
+            onClick={() => onViewModeChange('github')}
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all whitespace-nowrap ${
+              viewMode === 'github'
+                ? 'bg-amber-500 text-slate-950 shadow-md font-black shadow-amber-500/20'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+            }`}
+            title="Open Source GitHub Repositories & Frameworks"
+          >
+            <Github className="w-3.5 h-3.5 shrink-0 text-emerald-400" />
+            <span>GitHub</span>
+          </button>
+
+          <button
+            onClick={() => onViewModeChange('papers')}
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all whitespace-nowrap ${
+              viewMode === 'papers'
+                ? 'bg-amber-500 text-slate-950 shadow-md font-black shadow-amber-500/20'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+            }`}
+            title="Seminal Research Papers (arXiv, NeurIPS, ICML)"
+          >
+            <FileText className="w-3.5 h-3.5 shrink-0 text-teal-400" />
+            <span>Papers</span>
+          </button>
+
+          <button
+            onClick={() => onViewModeChange('books')}
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all whitespace-nowrap ${
+              viewMode === 'books'
+                ? 'bg-amber-500 text-slate-950 shadow-md font-black shadow-amber-500/20'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+            }`}
+            title="Essential Textbooks & Reference Books"
+          >
+            <BookOpen className="w-3.5 h-3.5 shrink-0 text-rose-400" />
+            <span>Books</span>
+          </button>
+
+          <button
+            onClick={() => onViewModeChange('blogs')}
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all whitespace-nowrap ${
+              viewMode === 'blogs'
+                ? 'bg-amber-500 text-slate-950 shadow-md font-black shadow-amber-500/20'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+            }`}
+            title="Articles, Deep-dives & Technical Blogs"
+          >
+            <Newspaper className="w-3.5 h-3.5 shrink-0 text-cyan-400" />
+            <span>Blogs</span>
+          </button>
+
+          <button
+            onClick={() => onViewModeChange('explorer')}
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all whitespace-nowrap ${
+              viewMode === 'explorer'
+                ? 'bg-amber-500 text-slate-950 shadow-md font-black shadow-amber-500/20'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+            }`}
+            title="All Learning Resources"
+          >
+            <Sparkles className="w-3.5 h-3.5 shrink-0" />
+            <span>All Resources</span>
+          </button>
         </div>
       </div>
 
-      {/* Middle: Search & Filter */}
-      <div className="hidden lg:flex items-center gap-2 max-w-xs xl:max-w-sm w-full mx-2 shrink">
-        <div className="relative w-full">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-          <input
-            type="text"
-            placeholder="Search topics, tools, papers..."
-            value={searchQuery}
-            onChange={(e) => onSearchChange(e.target.value)}
-            className="w-full pl-9 pr-14 py-1.5 rounded-xl bg-slate-900/90 border border-slate-700/60 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400/30 transition-all font-sans"
-          />
-          {searchQuery ? (
-            <button
-              onClick={() => onSearchChange('')}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 hover:text-white font-bold"
-            >
-              ×
-            </button>
-          ) : (
-            <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[9px] font-mono text-slate-500 px-1.5 py-0.5 rounded bg-slate-800 border border-slate-700/60 pointer-events-none">
-              ⌘K
-            </span>
-          )}
-        </div>
-      </div>
-
-      {/* Right Controls: View Switcher, Developer Links & Theme */}
+      {/* Right Controls: Supabase Actions, Developer Attribution, Admin Auth & Theme */}
       <div className="flex items-center gap-1.5 md:gap-2.5 shrink-0 overflow-x-auto no-scrollbar">
         {/* Developer Attribution Pill */}
         <div className="hidden 2xl:flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-slate-900/90 border border-slate-700/60 text-xs font-mono shrink-0 whitespace-nowrap">
@@ -201,74 +236,6 @@ export const TopBar: React.FC<TopBarProps> = ({
             <Github className="w-3.5 h-3.5" />
             <span>mdzaheerjk</span>
           </a>
-        </div>
-
-        {/* View Mode Switcher */}
-        <div className="bg-slate-900/90 border border-slate-700/60 p-1 rounded-xl flex items-center gap-1 shrink-0">
-          <button
-            onClick={() => onViewModeChange('canvas')}
-            className={`px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all whitespace-nowrap ${
-              viewMode === 'canvas'
-                ? 'bg-amber-500 text-slate-950 shadow-md font-black shadow-amber-500/20'
-                : 'text-slate-400 hover:text-slate-200'
-            }`}
-            title="Interactive Visual Roadmap Canvas"
-          >
-            <Layers className="w-3.5 h-3.5 shrink-0" />
-            <span className="hidden sm:inline">Roadmap</span>
-          </button>
-
-          <button
-            onClick={() => onViewModeChange('projects')}
-            className={`px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all whitespace-nowrap ${
-              viewMode === 'projects'
-                ? 'bg-amber-500 text-slate-950 shadow-md font-black shadow-amber-500/20'
-                : 'text-slate-400 hover:text-slate-200'
-            }`}
-            title="AI & Agentic Projects Catalog"
-          >
-            <Code2 className="w-3.5 h-3.5 shrink-0" />
-            <span className="hidden sm:inline">Projects</span>
-          </button>
-
-          <button
-            onClick={() => onViewModeChange('courses')}
-            className={`px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all whitespace-nowrap ${
-              viewMode === 'courses'
-                ? 'bg-amber-500 text-slate-950 shadow-md font-black shadow-amber-500/20'
-                : 'text-slate-400 hover:text-slate-200'
-            }`}
-            title="Online Courses & Certifications"
-          >
-            <GraduationCap className="w-3.5 h-3.5 shrink-0" />
-            <span className="hidden sm:inline">Courses</span>
-          </button>
-
-          <button
-            onClick={() => onViewModeChange('explorer')}
-            className={`px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all whitespace-nowrap ${
-              viewMode === 'explorer'
-                ? 'bg-amber-500 text-slate-950 shadow-md font-black shadow-amber-500/20'
-                : 'text-slate-400 hover:text-slate-200'
-            }`}
-            title="All Resources Discovery Catalog"
-          >
-            <Sparkles className="w-3.5 h-3.5 shrink-0" />
-            <span className="hidden sm:inline">All Resources</span>
-          </button>
-
-          <button
-            onClick={() => onViewModeChange('matrix')}
-            className={`px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all whitespace-nowrap ${
-              viewMode === 'matrix'
-                ? 'bg-amber-500 text-slate-950 shadow-md font-black shadow-amber-500/20'
-                : 'text-slate-400 hover:text-slate-200'
-            }`}
-            title="Curriculum Matrix View"
-          >
-            <ListOrdered className="w-3.5 h-3.5 shrink-0" />
-            <span className="hidden sm:inline">Matrix</span>
-          </button>
         </div>
 
         {/* Fetch Data from Supabase Button (Available for all users / admins) */}

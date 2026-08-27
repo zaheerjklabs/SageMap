@@ -21,7 +21,6 @@ import { useAuth } from './contexts/AuthContext';
 import { TopBar } from './components/TopBar';
 import { Sidebar } from './components/Sidebar';
 import { CanvasView } from './components/CanvasView';
-import { CurriculumMatrixView } from './components/CurriculumMatrixView';
 import { ResourceExplorerView } from './components/ResourceExplorerView';
 import { TopicDashboard } from './components/TopicDashboard';
 import { ResourceDetailPage } from './components/ResourceDetailPage';
@@ -177,10 +176,18 @@ export default function App() {
         setViewMode('projects');
       } else if (cleanHash === 'courses') {
         setViewMode('courses');
+      } else if (cleanHash === 'youtube') {
+        setViewMode('youtube');
+      } else if (cleanHash === 'github') {
+        setViewMode('github');
+      } else if (cleanHash === 'papers') {
+        setViewMode('papers');
+      } else if (cleanHash === 'books') {
+        setViewMode('books');
+      } else if (cleanHash === 'blogs' || cleanHash === 'articles') {
+        setViewMode('blogs');
       } else if (cleanHash === 'explorer' || cleanHash === 'resources') {
         setViewMode('explorer');
-      } else if (cleanHash === 'matrix') {
-        setViewMode('matrix');
       } else if (cleanHash === 'canvas' || cleanHash === 'roadmap') {
         setViewMode('canvas');
       }
@@ -222,17 +229,7 @@ export default function App() {
 
   const handleBackFromResourceDetail = () => {
     setSelectedResourceId(null);
-    if (viewMode === 'projects') {
-      window.location.hash = '/projects';
-    } else if (viewMode === 'courses') {
-      window.location.hash = '/courses';
-    } else if (viewMode === 'matrix') {
-      window.location.hash = '/matrix';
-    } else if (viewMode === 'explorer') {
-      window.location.hash = '/explorer';
-    } else {
-      window.location.hash = '/canvas';
-    }
+    window.location.hash = `/${viewMode}`;
   };
 
   const handleViewModeChange = (mode: ViewMode) => {
@@ -515,15 +512,6 @@ export default function App() {
               />
             )}
 
-            {viewMode === 'matrix' && (
-              <CurriculumMatrixView
-                topics={resolvedTopics}
-                onOpenTopicDashboard={handleOpenTopicDashboard}
-                savedResources={collections.savedResources}
-                onToggleSave={handleToggleSaveResource}
-              />
-            )}
-
             {viewMode === 'projects' && (
               <ResourceExplorerView
                 topics={resolvedTopics}
@@ -562,6 +550,101 @@ export default function App() {
               />
             )}
 
+            {viewMode === 'youtube' && (
+              <ResourceExplorerView
+                topics={resolvedTopics}
+                savedResources={collections.savedResources}
+                onToggleSave={handleToggleSaveResource}
+                onSelectTopic={handleSelectTopic}
+                onOpenResourceDetail={handleOpenResourceDetail}
+                isAdmin={isAdmin}
+                resourceOrder={collections.resourceOrder}
+                onReorderResources={isAdmin ? handleReorderResources : undefined}
+                onAddResourceClick={adminAddHandler}
+                onEditResource={adminEditHandler}
+                onDeleteResource={adminDeleteHandler}
+                defaultType="youtube"
+                viewTitle="YouTube Video Masterclasses & Playlists"
+                viewSubtitle="Comprehensive video lectures, playlists, tutorials, and crash courses across all 10 mastery steps."
+              />
+            )}
+
+            {viewMode === 'github' && (
+              <ResourceExplorerView
+                topics={resolvedTopics}
+                savedResources={collections.savedResources}
+                onToggleSave={handleToggleSaveResource}
+                onSelectTopic={handleSelectTopic}
+                onOpenResourceDetail={handleOpenResourceDetail}
+                isAdmin={isAdmin}
+                resourceOrder={collections.resourceOrder}
+                onReorderResources={isAdmin ? handleReorderResources : undefined}
+                onAddResourceClick={adminAddHandler}
+                onEditResource={adminEditHandler}
+                onDeleteResource={adminDeleteHandler}
+                defaultType="github"
+                viewTitle="Open Source GitHub Repositories"
+                viewSubtitle="Production frameworks, AI libraries, algorithms, benchmarks, and starter code repositories."
+              />
+            )}
+
+            {viewMode === 'papers' && (
+              <ResourceExplorerView
+                topics={resolvedTopics}
+                savedResources={collections.savedResources}
+                onToggleSave={handleToggleSaveResource}
+                onSelectTopic={handleSelectTopic}
+                onOpenResourceDetail={handleOpenResourceDetail}
+                isAdmin={isAdmin}
+                resourceOrder={collections.resourceOrder}
+                onReorderResources={isAdmin ? handleReorderResources : undefined}
+                onAddResourceClick={adminAddHandler}
+                onEditResource={adminEditHandler}
+                onDeleteResource={adminDeleteHandler}
+                defaultType="paper"
+                viewTitle="Seminal Research Papers"
+                viewSubtitle="Milestone AI/ML papers from arXiv, NeurIPS, ICML, CVPR, and top conference publications."
+              />
+            )}
+
+            {viewMode === 'books' && (
+              <ResourceExplorerView
+                topics={resolvedTopics}
+                savedResources={collections.savedResources}
+                onToggleSave={handleToggleSaveResource}
+                onSelectTopic={handleSelectTopic}
+                onOpenResourceDetail={handleOpenResourceDetail}
+                isAdmin={isAdmin}
+                resourceOrder={collections.resourceOrder}
+                onReorderResources={isAdmin ? handleReorderResources : undefined}
+                onAddResourceClick={adminAddHandler}
+                onEditResource={adminEditHandler}
+                onDeleteResource={adminDeleteHandler}
+                defaultType="book"
+                viewTitle="Textbooks & Reference Literature"
+                viewSubtitle="Definitive textbooks and foundational reference literature on mathematics, ML, deep learning, and MLOps."
+              />
+            )}
+
+            {viewMode === 'blogs' && (
+              <ResourceExplorerView
+                topics={resolvedTopics}
+                savedResources={collections.savedResources}
+                onToggleSave={handleToggleSaveResource}
+                onSelectTopic={handleSelectTopic}
+                onOpenResourceDetail={handleOpenResourceDetail}
+                isAdmin={isAdmin}
+                resourceOrder={collections.resourceOrder}
+                onReorderResources={isAdmin ? handleReorderResources : undefined}
+                onAddResourceClick={adminAddHandler}
+                onEditResource={adminEditHandler}
+                onDeleteResource={adminDeleteHandler}
+                defaultType="article"
+                viewTitle="Technical Articles & Engineering Blogs"
+                viewSubtitle="In-depth technical writeups, architectural deep-dives, and production guides from industry practitioners."
+              />
+            )}
+
             {viewMode === 'explorer' && (
               <ResourceExplorerView
                 topics={resolvedTopics}
@@ -576,7 +659,7 @@ export default function App() {
                 onEditResource={adminEditHandler}
                 onDeleteResource={adminDeleteHandler}
                 defaultType="all"
-                viewTitle="AI & ML Resource Discovery Catalog"
+                viewTitle="All AI & ML Learning Resources"
                 viewSubtitle="Browse, search, and bookmark hundreds of courses, GitHub repositories, research papers, and technical deep-dives across all 10 mastery steps."
               />
             )}

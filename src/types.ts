@@ -157,12 +157,14 @@ export interface CanvasTransform {
 
 export type ViewMode = 
   | 'canvas' 
-  | 'matrix' 
-  | 'explorer' 
   | 'projects' 
   | 'courses' 
+  | 'youtube' 
   | 'github' 
-  | 'literature';
+  | 'papers' 
+  | 'books' 
+  | 'blogs' 
+  | 'explorer';
 
 export interface UserCollections {
   savedResources: Record<string, boolean>; // resourceId -> true (bookmarked / saved to collection)

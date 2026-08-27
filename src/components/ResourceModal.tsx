@@ -102,6 +102,25 @@ export const ResourceModal: React.FC<ResourceModalProps> = ({
       ? technologiesText.split(',').map((t) => t.trim()).filter(Boolean)
       : ['AI', 'Machine Learning'];
 
+    let finalImageUrl = imageUrl.trim();
+    if (!finalImageUrl) {
+      if (url.includes('udemy.com')) {
+        finalImageUrl = `https://api.microlink.io/?url=${encodeURIComponent(url.trim().split('?')[0])}&embed=image.url`;
+      } else if (url.includes('github.com')) {
+        const ghMatch = url.match(/github\.com\/([^\/]+)\/([^\/]+)/);
+        if (ghMatch && ghMatch[1] && ghMatch[2]) {
+          const owner = ghMatch[1];
+          const repo = ghMatch[2].replace(/\.git$/, '').split('#')[0].split('?')[0];
+          finalImageUrl = `https://opengraph.githubassets.com/1/${owner}/${repo}`;
+        }
+      } else {
+        const ytMatch = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|v\/|shorts\/))([\w-]{11})/);
+        if (ytMatch && ytMatch[1]) {
+          finalImageUrl = `https://img.youtube.com/vi/${ytMatch[1]}/hqdefault.jpg`;
+        }
+      }
+    }
+
     const resourceId = editingResource ? editingResource.id : `custom-${Date.now()}`;
 
     const updatedResource: ResourceItem = {
@@ -111,7 +130,7 @@ export const ResourceModal: React.FC<ResourceModalProps> = ({
       type,
       title: title.trim(),
       url: url.trim(),
-      imageUrl: imageUrl.trim() || undefined,
+      imageUrl: finalImageUrl || undefined,
       description: description.trim() || 'Curated AI & ML learning resource.',
       difficulty,
       technologies: techs,

@@ -282,33 +282,35 @@ export const ResourceExplorerView: React.FC<ResourceExplorerViewProps> = ({
             </div>
           </div>
 
-          {/* Resource Type Category Pills */}
-          <div className="flex items-center gap-1.5 overflow-x-auto pt-2 border-t border-slate-800/80 custom-scrollbar">
-            {[
-              { id: 'all', label: 'All Categories', icon: <Sparkles className="w-3.5 h-3.5" /> },
-              { id: 'youtube', label: 'YouTube Videos', icon: <Tv className="w-3.5 h-3.5 text-red-400" /> },
-              { id: 'github', label: 'GitHub Repos', icon: <Github className="w-3.5 h-3.5 text-emerald-400" /> },
-              { id: 'course', label: 'Udemy Courses', icon: <UdemyLogo className="w-3.5 h-3.5 text-purple-400" /> },
-              { id: 'project', label: 'Projects', icon: <Code2 className="w-3.5 h-3.5 text-amber-400" /> },
-              { id: 'documentation', label: 'Docs', icon: <Globe className="w-3.5 h-3.5 text-blue-400" /> },
-              { id: 'paper', label: 'Research Papers', icon: <FileText className="w-3.5 h-3.5 text-teal-400" /> },
-              { id: 'book', label: 'Books', icon: <BookOpen className="w-3.5 h-3.5 text-rose-400" /> },
-              { id: 'article', label: 'Articles', icon: <Newspaper className="w-3.5 h-3.5 text-cyan-400" /> }
-            ].map((cat) => (
-              <button
-                key={cat.id}
-                onClick={() => setSelectedType(cat.id)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-colors flex items-center gap-1.5 ${
-                  selectedType === cat.id
-                    ? 'bg-cyan-500 text-slate-950 font-black shadow-md'
-                    : 'bg-slate-900 text-slate-400 hover:text-slate-200 border border-slate-800'
-                }`}
-              >
-                {cat.icon}
-                <span>{cat.label}</span>
-              </button>
-            ))}
-          </div>
+          {/* Resource Type Category Pills (Only shown in 'all' Explorer view, hidden on dedicated pages) */}
+          {defaultType === 'all' && (
+            <div className="flex items-center gap-1.5 overflow-x-auto pt-2 border-t border-slate-800/80 custom-scrollbar">
+              {[
+                { id: 'all', label: 'All Categories', icon: <Sparkles className="w-3.5 h-3.5" /> },
+                { id: 'project', label: 'Projects', icon: <Code2 className="w-3.5 h-3.5 text-amber-400" /> },
+                { id: 'course', label: 'Courses', icon: <UdemyLogo className="w-3.5 h-3.5 text-purple-400" /> },
+                { id: 'youtube', label: 'YouTube Videos', icon: <Tv className="w-3.5 h-3.5 text-red-400" /> },
+                { id: 'github', label: 'GitHub Repos', icon: <Github className="w-3.5 h-3.5 text-emerald-400" /> },
+                { id: 'paper', label: 'Research Papers', icon: <FileText className="w-3.5 h-3.5 text-teal-400" /> },
+                { id: 'book', label: 'Books', icon: <BookOpen className="w-3.5 h-3.5 text-rose-400" /> },
+                { id: 'article', label: 'Articles / Blogs', icon: <Newspaper className="w-3.5 h-3.5 text-cyan-400" /> },
+                { id: 'documentation', label: 'Docs', icon: <Globe className="w-3.5 h-3.5 text-blue-400" /> }
+              ].map((cat) => (
+                <button
+                  key={cat.id}
+                  onClick={() => setSelectedType(cat.id)}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-colors flex items-center gap-1.5 ${
+                    selectedType === cat.id
+                      ? 'bg-amber-500 text-slate-950 font-black shadow-md'
+                      : 'bg-slate-900 text-slate-400 hover:text-slate-200 border border-slate-800'
+                  }`}
+                >
+                  {cat.icon}
+                  <span>{cat.label}</span>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Resources Grid */}

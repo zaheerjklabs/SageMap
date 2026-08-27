@@ -32,6 +32,8 @@ import {
   BookMarked
 } from 'lucide-react';
 import { UdemyLogo } from './UdemyLogo';
+import { GitHubCardBanner } from './GitHubCardBanner';
+import { UdemyCourseBanner } from './UdemyCourseBanner';
 import { ResourceItem, RoadmapTopic } from '../types';
 import { getResourceThumbnail } from './ResourceCard';
 import { deriveResourceDetails, getResourceSlug } from '../utils/resourcePageUtils';
@@ -735,22 +737,41 @@ Provide a concise, practical, technical answer with clean Markdown formatting, c
             <div className="rounded-3xl bg-[#0D1117]/95 border border-slate-800/90 shadow-2xl overflow-hidden backdrop-blur-xl">
               
               {/* Thumbnail / Cover Image with overlay tag */}
-              <div className="relative w-full aspect-video bg-[#05070B] overflow-hidden group">
-                <img
-                  src={thumbnailUrl}
-                  alt={resource.title}
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=800&auto=format&fit=crop';
-                  }}
-                  className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500"
-                />
+              <div className={`relative w-full aspect-video bg-[#05070B] overflow-hidden group ${
+                resource.type === 'book' ? 'p-3 bg-[#06090E] flex items-center justify-center' : ''
+              }`}>
+                {(resource.imageUrl || resource.thumbnailUrl) ? (
+                  <img
+                    src={resource.imageUrl || resource.thumbnailUrl}
+                    alt={resource.title}
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=800&auto=format&fit=crop';
+                    }}
+                    className={`w-full h-full ${resource.type === 'book' ? 'object-contain drop-shadow-xl' : 'object-cover'} group-hover:scale-105 transition-transform duration-500`}
+                  />
+                ) : resource.type === 'github' || (resource.type !== 'project' && resource.url && resource.url.includes('github.com')) ? (
+                  <GitHubCardBanner resource={resource} />
+                ) : (resource.type === 'course' && (resource.url?.includes('udemy.com') || resource.platform === 'Udemy')) ? (
+                  <UdemyCourseBanner resource={resource} />
+                ) : (
+                  <>
+                    <img
+                      src={thumbnailUrl}
+                      alt={resource.title}
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=800&auto=format&fit=crop';
+                      }}
+                      className={`w-full h-full ${resource.type === 'book' ? 'object-contain drop-shadow-xl p-2' : 'object-contain'} group-hover:scale-105 transition-transform duration-500`}
+                    />
 
-                {/* Tag overlay matching Krish Naik screenshot */}
-                <div className="absolute top-3 left-3 flex items-center gap-1.5">
-                  <span className="px-2.5 py-1 rounded-md text-[10px] font-extrabold uppercase tracking-wider bg-slate-950/90 text-amber-300 border border-amber-500/40 shadow-lg backdrop-blur-md">
-                    {derived.categoryTag.split('&')[0]}
-                  </span>
-                </div>
+                    {/* Tag overlay matching Krish Naik screenshot */}
+                    <div className="absolute top-3 left-3 flex items-center gap-1.5">
+                      <span className="px-2.5 py-1 rounded-md text-[10px] font-extrabold uppercase tracking-wider bg-slate-950/90 text-amber-300 border border-amber-500/40 shadow-lg backdrop-blur-md">
+                        {derived.categoryTag.split('&')[0]}
+                      </span>
+                    </div>
+                  </>
+                )}
               </div>
 
               {/* Card Body */}
