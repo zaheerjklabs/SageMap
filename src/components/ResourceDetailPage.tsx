@@ -234,17 +234,18 @@ Provide a concise, practical, technical answer with clean Markdown formatting, c
               {onEdit && (
                 <button
                   onClick={() => onEdit(resource)}
-                  className="p-1.5 rounded-xl bg-amber-500/15 text-amber-300 border border-amber-500/30 hover:bg-amber-500/25 transition-all text-xs font-bold"
-                  title="Edit resource in Supabase"
+                  className="px-2.5 py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 transition-all text-xs font-bold flex items-center gap-1.5 shadow-sm"
+                  title="Full Admin Edit (Title, Image, Links, Outcomes, Tags)"
                 >
                   <Edit3 className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Edit Resource</span>
                 </button>
               )}
               {onDelete && (
                 <button
                   onClick={() => onDelete(resource)}
                   className="p-1.5 rounded-xl bg-red-500/15 text-red-300 border border-red-500/30 hover:bg-red-500/25 transition-all text-xs font-bold"
-                  title="Delete resource from Supabase"
+                  title="Delete resource from database"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                 </button>

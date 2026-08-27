@@ -155,7 +155,7 @@ export async function upsertResource(
     throw new Error(error.message);
   }
 
-  // Atomically fetch and update DB metadata row to ensure resource.id is removed from deletedResourceIds
+  // Atomically fetch and update DB metadata row to ensure resource.id is removed from deletedResourceIds and resourceOrder is preserved
   try {
     const { data: metaRow } = await supabase
       .from('resources')
@@ -164,28 +164,34 @@ export async function upsertResource(
       .maybeSingle();
 
     let currentDeleted: string[] = existingDeletedIds;
-    if (metaRow?.data && Array.isArray((metaRow.data as any).deletedResourceIds)) {
-      currentDeleted = (metaRow.data as any).deletedResourceIds;
+    let currentOrder: string[] = [];
+    if (metaRow?.data) {
+      const meta = metaRow.data as any;
+      if (Array.isArray(meta.deletedResourceIds)) {
+        currentDeleted = meta.deletedResourceIds;
+      }
+      if (Array.isArray(meta.resourceOrder)) {
+        currentOrder = meta.resourceOrder;
+      }
     }
 
-    if (currentDeleted.includes(resource.id)) {
-      const updatedDeleted = currentDeleted.filter((id) => id !== resource.id);
-      await supabase
-        .from('resources')
-        .upsert(
-          {
-            id: METADATA_ROW_ID,
-            topic_id: 0,
-            data: {
-              isInitialized: true,
-              deletedResourceIds: updatedDeleted,
-              lastSyncedAt: new Date().toISOString()
-            } as any,
-            updated_at: new Date().toISOString()
-          },
-          { onConflict: 'id' }
-        );
-    }
+    const updatedDeleted = currentDeleted.filter((id) => id !== resource.id);
+    await supabase
+      .from('resources')
+      .upsert(
+        {
+          id: METADATA_ROW_ID,
+          topic_id: 0,
+          data: {
+            isInitialized: true,
+            deletedResourceIds: updatedDeleted,
+            resourceOrder: currentOrder,
+            lastSyncedAt: new Date().toISOString()
+          } as any,
+          updated_at: new Date().toISOString()
+        },
+        { onConflict: 'id' }
+      );
   } catch (metaErr) {
     console.warn('Atomic metadata update notice:', metaErr);
   }
@@ -215,8 +221,9 @@ export async function deleteResource(
     throw new Error(error.message);
   }
 
-  // 2. Fetch current DB metadata to append deletion tombstone cleanly
+  // 2. Fetch current DB metadata to append deletion tombstone cleanly and preserve resource order
   let currentDeleted = [...existingDeletedIds];
+  let currentOrder: string[] = [];
   try {
     const { data: metaRow } = await supabase
       .from('resources')
@@ -224,14 +231,21 @@ export async function deleteResource(
       .eq('id', METADATA_ROW_ID)
       .maybeSingle();
 
-    if (metaRow?.data && Array.isArray((metaRow.data as any).deletedResourceIds)) {
-      currentDeleted = (metaRow.data as any).deletedResourceIds;
+    if (metaRow?.data) {
+      const meta = metaRow.data as any;
+      if (Array.isArray(meta.deletedResourceIds)) {
+        currentDeleted = meta.deletedResourceIds;
+      }
+      if (Array.isArray(meta.resourceOrder)) {
+        currentOrder = meta.resourceOrder;
+      }
     }
   } catch (e) {
     console.warn('Metadata fetch notice on delete:', e);
   }
 
   const updatedDeleted = Array.from(new Set([...currentDeleted, resourceId]));
+  const updatedOrder = currentOrder.filter((id) => id !== resourceId);
 
   try {
     await supabase
@@ -243,6 +257,7 @@ export async function deleteResource(
           data: {
             isInitialized: true,
             deletedResourceIds: updatedDeleted,
+            resourceOrder: updatedOrder,
             lastSyncedAt: new Date().toISOString()
           } as any,
           updated_at: new Date().toISOString()
@@ -333,12 +348,13 @@ export async function seedResourcesIfEmpty(resources: ResourceItem[]): Promise<b
  */
 export async function pushWebsiteStateToSupabase(
   activeResources: ResourceItem[],
-  existingDeletedIds: string[] = []
+  existingDeletedIds: string[] = [],
+  resourceOrder: string[] = []
 ): Promise<boolean> {
   if (!isSupabaseConfigured) return false;
 
   try {
-    // 1. Fetch current DB row IDs
+    // 1. Fetch current DB row IDs & current metadata
     const { data: dbRows, error: fetchError } = await supabase
       .from('resources')
       .select('id');
@@ -378,7 +394,23 @@ export async function pushWebsiteStateToSupabase(
       await syncAllResourcesToSupabase(activeResources);
     }
 
-    // 3. Persist system metadata
+    // 3. Resolve resourceOrder (use passed array or retrieve existing from DB)
+    let finalOrder = [...resourceOrder];
+    if (finalOrder.length === 0) {
+      const { data: metaRow } = await supabase
+        .from('resources')
+        .select('data')
+        .eq('id', METADATA_ROW_ID)
+        .maybeSingle();
+      if (metaRow?.data && Array.isArray((metaRow.data as any).resourceOrder)) {
+        finalOrder = (metaRow.data as any).resourceOrder;
+      }
+    }
+
+    // Clean deleted items from finalOrder
+    const finalCleanedOrder = finalOrder.filter((id) => activeIds.has(id));
+
+    // 4. Persist system metadata including resource order
     await supabase
       .from('resources')
       .upsert(
@@ -388,6 +420,7 @@ export async function pushWebsiteStateToSupabase(
           data: {
             isInitialized: true,
             deletedResourceIds: cleanedDeleted,
+            resourceOrder: finalCleanedOrder,
             lastSyncedAt: new Date().toISOString()
           } as any,
           updated_at: new Date().toISOString()

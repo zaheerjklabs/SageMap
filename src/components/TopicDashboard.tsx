@@ -37,6 +37,7 @@ interface TopicDashboardProps {
   onEditResource?: (resource: ResourceItem) => void;
   onDeleteResource?: (resource: ResourceItem) => void;
   onOpenResourceDetail?: (resource: ResourceItem) => void;
+  onEditTopic?: (topic: RoadmapTopic) => void;
   topicNote: string;
   onSaveNote: (topicId: number, note: string) => void;
   onSelectTopic: (topicId: number) => void;
@@ -55,6 +56,7 @@ export const TopicDashboard: React.FC<TopicDashboardProps> = ({
   onEditResource,
   onDeleteResource,
   onOpenResourceDetail,
+  onEditTopic,
   topicNote,
   onSaveNote,
   onSelectTopic,
@@ -93,35 +95,43 @@ export const TopicDashboard: React.FC<TopicDashboardProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end bg-black/75 backdrop-blur-md transition-all duration-300 animate-fadeIn">
-      {/* Click backdrop to close */}
-      <div className="flex-1 hidden md:block" onClick={onClose} />
-
-      {/* Main Drawer / Modal Panel */}
-      <div className="w-full md:w-[860px] lg:w-[940px] h-full bg-[#0D1117] border-l border-slate-800 shadow-2xl flex flex-col overflow-hidden text-slate-100 font-sans">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fadeIn font-sans select-none">
+      <div className="w-full max-w-5xl h-[90vh] bg-[#0D1117] border border-slate-800 rounded-3xl shadow-2xl overflow-hidden flex flex-col text-slate-100">
+        
         {/* ======================================================== */}
-        {/* TOP HEADER */}
+        {/* HEADER SECTION */}
         {/* ======================================================== */}
-        <div className="p-6 border-b border-slate-800 bg-[#090A0F]/90 shrink-0 sticky top-0 z-20">
+        <div className="p-6 border-b border-slate-800/80 bg-slate-950/80 backdrop-blur-xl shrink-0">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <div className="flex items-center gap-2.5 mb-2">
-                <span className="px-3 py-0.5 rounded-xl text-xs font-mono font-black bg-amber-500/20 text-amber-300 border border-amber-500/40">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="px-2.5 py-0.5 rounded-lg text-xs font-mono font-bold bg-amber-500/10 text-amber-300 border border-amber-500/30">
                   STEP {topic.stepNumber}
                 </span>
-                <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                <span className="text-xs font-semibold text-slate-400">
                   {topic.categoryLabel}
                 </span>
               </div>
-              <h2 className="text-2xl lg:text-3xl font-black text-white tracking-tight">
+              <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight leading-tight">
                 {topic.title}
               </h2>
-              <p className="text-xs lg:text-sm text-slate-300 mt-2 leading-relaxed max-w-3xl">
+              <p className="text-xs sm:text-sm text-slate-400 mt-1 max-w-3xl line-clamp-2">
                 {topic.overview}
               </p>
             </div>
 
             <div className="flex items-center gap-2">
+              {onEditTopic && (
+                <button
+                  onClick={() => onEditTopic(topic)}
+                  className="px-3 py-1.5 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/40 text-xs font-bold text-amber-300 flex items-center gap-1.5 transition-colors shadow-sm"
+                  title="Admin Edit Topic & Overview Text"
+                >
+                  <Edit3 className="w-4 h-4 text-amber-400" />
+                  <span className="hidden sm:inline">Edit Topic</span>
+                </button>
+              )}
+
               {onOpenSageAi && (
                 <button
                   onClick={() => onOpenSageAi(topic.id)}

@@ -25,11 +25,13 @@ import { ResourceExplorerView } from './components/ResourceExplorerView';
 import { TopicDashboard } from './components/TopicDashboard';
 import { ResourceDetailPage } from './components/ResourceDetailPage';
 import { ResourceModal } from './components/ResourceModal';
+import { TopicEditModal } from './components/TopicEditModal';
 import { DeleteConfirmModal } from './components/DeleteConfirmModal';
 import { AuthModal } from './components/AuthModal';
 import { SageAITutorDrawer } from './components/SageAITutorDrawer';
 import { parseResourceIdFromHash } from './utils/resourcePageUtils';
 import { Bot } from 'lucide-react';
+import { RoadmapTopic as RoadmapTopicType } from './types';
 
 export default function App() {
   const { isAdmin, isLoading: authLoading, signIn, signUp, signOut, user, isPasswordRecovery } = useAuth();
@@ -50,6 +52,17 @@ export default function App() {
   const [isResourceModalOpen, setIsResourceModalOpen] = useState<boolean>(false);
   const [resourceModalTopicId, setResourceModalTopicId] = useState<number>(1);
   const [editingResource, setEditingResource] = useState<ResourceItem | null>(null);
+
+  const [editingTopic, setEditingTopic] = useState<RoadmapTopicType | null>(null);
+  const [isTopicEditModalOpen, setIsTopicEditModalOpen] = useState<boolean>(false);
+  const [topicOverrides, setTopicOverrides] = useState<Record<number, Partial<RoadmapTopicType>>>(() => {
+    try {
+      const s = localStorage.getItem('sagemap_topic_overrides');
+      return s ? JSON.parse(s) : {};
+    } catch {
+      return {};
+    }
+  });
   
   const [deletingResource, setDeletingResource] = useState<ResourceItem | null>(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState<boolean>(false);
@@ -85,10 +98,14 @@ export default function App() {
     setDeletedResourceIds(result.deletedIds);
     setIsDbInitialized(result.isInitialized);
     if (result.resourceOrder && result.resourceOrder.length > 0) {
-      setCollections((prev) => ({
-        ...prev,
-        resourceOrder: result.resourceOrder
-      }));
+      setCollections((prev) => {
+        const updated = {
+          ...prev,
+          resourceOrder: result.resourceOrder
+        };
+        saveCollectionsToStorage(updated);
+        return updated;
+      });
     }
     return result;
   }, []);
@@ -113,10 +130,14 @@ export default function App() {
           });
         }
         if (resourceOrder && resourceOrder.length > 0) {
-          setCollections((prev) => ({
-            ...prev,
-            resourceOrder
-          }));
+          setCollections((prev) => {
+            const updated = {
+              ...prev,
+              resourceOrder
+            };
+            saveCollectionsToStorage(updated);
+            return updated;
+          });
         }
       } else if (resource) {
         setDbResources((prev) => {
@@ -207,8 +228,42 @@ export default function App() {
   const deletedIdSet = useMemo(() => new Set(deletedResourceIds), [deletedResourceIds]);
 
   const resolvedTopics = useMemo(() => {
-    return mergeTopicsWithDbResources(ROADMAP_TOPICS, dbResources, isDbInitialized, deletedIdSet);
-  }, [dbResources, isDbInitialized, deletedIdSet]);
+    const merged = mergeTopicsWithDbResources(ROADMAP_TOPICS, dbResources, isDbInitialized, deletedIdSet);
+    return merged.map((t) => {
+      const override = topicOverrides[t.id];
+      if (!override) return t;
+      return {
+        ...t,
+        ...override
+      };
+    });
+  }, [dbResources, isDbInitialized, deletedIdSet, topicOverrides]);
+
+  const handleOpenEditTopic = (topic: RoadmapTopicType) => {
+    setEditingTopic(topic);
+    setIsTopicEditModalOpen(true);
+  };
+
+  const handleSaveTopic = (updatedTopic: RoadmapTopicType) => {
+    setTopicOverrides((prev) => {
+      const next = {
+        ...prev,
+        [updatedTopic.id]: {
+          title: updatedTopic.title,
+          shortSubtitle: updatedTopic.shortSubtitle,
+          categoryLabel: updatedTopic.categoryLabel,
+          overview: updatedTopic.overview,
+          stepNumber: updatedTopic.stepNumber
+        }
+      };
+      try {
+        localStorage.setItem('sagemap_topic_overrides', JSON.stringify(next));
+      } catch (err) {
+        console.error('Failed to save topic overrides', err);
+      }
+      return next;
+    });
+  };
 
   // Look up selected resource for dedicated Krish Naik style detail page
   const selectedResourceData = useMemo(() => {
@@ -377,10 +432,14 @@ export default function App() {
     setIsSyncing(true);
     try {
       const currentActiveResources = resolvedTopics.flatMap((t) => t.resources);
-      const success = await pushWebsiteStateToSupabase(currentActiveResources, deletedResourceIds);
+      const success = await pushWebsiteStateToSupabase(
+        currentActiveResources,
+        deletedResourceIds,
+        collections.resourceOrder
+      );
       if (success) {
         await refreshResources();
-        showToast('Website changes synced to Supabase (deletions and edits applied)!');
+        showToast('Website changes and card positions synced permanently to Supabase!');
       } else {
         alert('Could not complete database sync. Check your connection or console.');
       }
@@ -676,6 +735,7 @@ export default function App() {
         onEditResource={adminEditHandler}
         onDeleteResource={adminDeleteHandler}
         onOpenResourceDetail={handleOpenResourceDetail}
+        onEditTopic={isAdmin ? handleOpenEditTopic : undefined}
         topicNote={dashboardTopicId ? collections.topicNotes[dashboardTopicId] || '' : ''}
         onSaveNote={handleSaveNote}
         onSelectTopic={handleSelectTopic}
@@ -726,6 +786,16 @@ export default function App() {
             onSaveResource={handleSaveResource}
             initialTopicId={resourceModalTopicId}
             editingResource={editingResource}
+          />
+
+          <TopicEditModal
+            topic={editingTopic}
+            isOpen={isTopicEditModalOpen}
+            onClose={() => {
+              setIsTopicEditModalOpen(false);
+              setEditingTopic(null);
+            }}
+            onSaveTopic={handleSaveTopic}
           />
 
           <DeleteConfirmModal

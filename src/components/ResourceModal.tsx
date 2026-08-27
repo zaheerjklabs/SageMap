@@ -46,6 +46,10 @@ export const ResourceModal: React.FC<ResourceModalProps> = ({
 
   const [imageUrl, setImageUrl] = useState('');
 
+  const [learningOutcomesText, setLearningOutcomesText] = useState('');
+  const [prerequisitesText, setPrerequisitesText] = useState('');
+  const [highlightsText, setHighlightsText] = useState('');
+
   // Sync form values when opening or when editingResource changes
   useEffect(() => {
     if (editingResource) {
@@ -57,6 +61,9 @@ export const ResourceModal: React.FC<ResourceModalProps> = ({
       setDescription(editingResource.description || '');
       setDifficulty(editingResource.difficulty || 'Intermediate');
       setTechnologiesText(editingResource.technologies ? editingResource.technologies.join(', ') : '');
+      setLearningOutcomesText(editingResource.learningOutcomes ? editingResource.learningOutcomes.join('\n') : '');
+      setPrerequisitesText(editingResource.prerequisites ? editingResource.prerequisites.join('\n') : '');
+      setHighlightsText(editingResource.keyHighlights ? editingResource.keyHighlights.join('\n') : '');
 
       // Set specific author / channel / instructor
       const authorVal = 
@@ -89,6 +96,9 @@ export const ResourceModal: React.FC<ResourceModalProps> = ({
       setDurationOrStars('');
       setTechnologiesText('');
       setImageUrl('');
+      setLearningOutcomesText('');
+      setPrerequisitesText('');
+      setHighlightsText('');
     }
   }, [editingResource, initialTopicId, isOpen]);
 
@@ -101,6 +111,18 @@ export const ResourceModal: React.FC<ResourceModalProps> = ({
     const techs = technologiesText
       ? technologiesText.split(',').map((t) => t.trim()).filter(Boolean)
       : ['AI', 'Machine Learning'];
+
+    const outcomes = learningOutcomesText
+      ? learningOutcomesText.split('\n').map((l) => l.trim()).filter(Boolean)
+      : undefined;
+
+    const prereqs = prerequisitesText
+      ? prerequisitesText.split('\n').map((l) => l.trim()).filter(Boolean)
+      : undefined;
+
+    const highlights = highlightsText
+      ? highlightsText.split('\n').map((l) => l.trim()).filter(Boolean)
+      : undefined;
 
     let finalImageUrl = imageUrl.trim();
     if (!finalImageUrl) {
@@ -134,6 +156,9 @@ export const ResourceModal: React.FC<ResourceModalProps> = ({
       description: description.trim() || 'Curated AI & ML learning resource.',
       difficulty,
       technologies: techs,
+      learningOutcomes: outcomes,
+      prerequisites: prereqs,
+      keyHighlights: highlights,
       isCustom: editingResource ? (editingResource.isCustom ?? false) : true,
       isEdited: isEdit ? true : undefined,
       ...(type === 'youtube' && { channelName: channelOrAuthor, duration: durationOrStars }),
@@ -150,8 +175,8 @@ export const ResourceModal: React.FC<ResourceModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fadeIn font-sans">
-      <div className="w-full max-w-xl bg-[#0D1117] border border-slate-700/80 rounded-3xl shadow-2xl overflow-hidden text-slate-100 flex flex-col max-h-[90vh]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fadeIn font-sans select-none">
+      <div className="w-full max-w-2xl bg-[#0D1117] border border-slate-700/80 rounded-3xl shadow-2xl overflow-hidden text-slate-100 flex flex-col max-h-[90vh]">
         {/* Header */}
         <div className="p-5 border-b border-slate-800 flex items-center justify-between bg-slate-950/80">
           <div className="flex items-center gap-2.5">
@@ -164,12 +189,10 @@ export const ResourceModal: React.FC<ResourceModalProps> = ({
             </div>
             <div>
               <h3 className="text-base font-black text-white">
-                {isEdit ? 'Edit Learning Resource' : 'Add Learning Resource'}
+                {isEdit ? 'Edit Resource Content & Metadata' : 'Add New Learning Resource'}
               </h3>
               <p className="text-xs text-slate-400">
-                {isEdit 
-                  ? 'Modify resource details, category, links, and study tags' 
-                  : 'Contribute a repository, video, course, paper, or project'}
+                Full administrative access to edit title, image, descriptions, outcomes, and tags
               </p>
             </div>
           </div>
@@ -246,7 +269,7 @@ export const ResourceModal: React.FC<ResourceModalProps> = ({
               placeholder="e.g. Build an Autonomous Agent with LangGraph & Python"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-xs text-slate-200 focus:outline-none focus:border-amber-400 font-medium"
+              className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-xs font-bold text-slate-200 focus:outline-none focus:border-amber-400"
             />
           </div>
 
@@ -265,32 +288,68 @@ export const ResourceModal: React.FC<ResourceModalProps> = ({
             />
           </div>
 
-          {/* Custom Banner Image URL (Optional) */}
+          {/* Custom Banner Image URL with Live Preview */}
           <div>
             <label className="text-xs font-bold text-slate-300 block mb-1.5 flex items-center justify-between">
-              <span>Thumbnail / Cover Image URL (Optional)</span>
-              <span className="text-[10px] text-slate-500 font-normal">Auto-fetched from YouTube / GitHub if empty</span>
+              <span>Thumbnail / Image URL</span>
+              <span className="text-[10px] text-amber-400 font-normal">Direct image URL (JPG, PNG, WebP)</span>
             </label>
-            <input
-              type="url"
-              placeholder="https://images.unsplash.com/... (Leave empty for auto-fetch)"
-              value={imageUrl}
-              onChange={(e) => setImageUrl(e.target.value)}
-              className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-xs text-slate-200 focus:outline-none focus:border-amber-400 font-mono text-[11px]"
-            />
+            <div className="flex gap-2">
+              <input
+                type="url"
+                placeholder="https://images.unsplash.com/... or any direct image URL"
+                value={imageUrl}
+                onChange={(e) => setImageUrl(e.target.value)}
+                className="flex-1 px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-xs text-slate-200 focus:outline-none focus:border-amber-400 font-mono text-[11px]"
+              />
+              {imageUrl && (
+                <div className="w-10 h-9 rounded-lg overflow-hidden border border-slate-700 shrink-0 bg-slate-950">
+                  <img src={imageUrl} alt="preview" className="w-full h-full object-cover" onError={(e) => (e.currentTarget.style.display = 'none')} />
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Description */}
           <div>
             <label className="text-xs font-bold text-slate-300 block mb-1.5">
-              Short Description
+              Overview Description
             </label>
             <textarea
-              rows={2}
+              rows={3}
               placeholder="Brief summary of what will be learned or why this is essential..."
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-xs text-slate-200 focus:outline-none focus:border-amber-400"
+              className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-xs text-slate-200 focus:outline-none focus:border-amber-400 leading-relaxed"
+            />
+          </div>
+
+          {/* What You Will Learn (One per line) */}
+          <div>
+            <label className="text-xs font-bold text-slate-300 block mb-1.5 flex items-center justify-between">
+              <span>What You Will Learn (1 outcome per line)</span>
+              <span className="text-[10px] text-emerald-400 font-mono">Generates green checkmark list</span>
+            </label>
+            <textarea
+              rows={3}
+              placeholder={`Build modular production pipelines\nMaster prompt chaining & structured tool calling\nOptimize vector embedding retrieval latency`}
+              value={learningOutcomesText}
+              onChange={(e) => setLearningOutcomesText(e.target.value)}
+              className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-xs text-slate-200 focus:outline-none focus:border-amber-400 leading-relaxed font-mono text-[11px]"
+            />
+          </div>
+
+          {/* Prerequisites (One per line) */}
+          <div>
+            <label className="text-xs font-bold text-slate-300 block mb-1.5">
+              Prerequisites (1 requirement per line)
+            </label>
+            <textarea
+              rows={2}
+              placeholder={`Intermediate Python 3.11+ async knowledge\nBasic understanding of LLM prompt structures`}
+              value={prerequisitesText}
+              onChange={(e) => setPrerequisitesText(e.target.value)}
+              className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-xs text-slate-200 focus:outline-none focus:border-amber-400 leading-relaxed font-mono text-[11px]"
             />
           </div>
 
