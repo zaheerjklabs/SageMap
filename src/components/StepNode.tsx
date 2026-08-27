@@ -169,8 +169,8 @@ export const StepNode: React.FC<StepNodeProps> = ({
           {courseResources.length > 0 && (
             <div className="px-2.5 py-1.5 rounded-xl bg-purple-500/15 border border-purple-500/30 text-purple-300 flex items-center justify-between">
               <span className="flex items-center gap-1.5">
-                <UdemyLogo className="w-3.5 h-3.5 text-purple-400" />
-                <span className="text-[11px]">Udemy</span>
+                <GraduationCap className="w-3.5 h-3.5 text-purple-400" />
+                <span className="text-[11px]">Courses</span>
               </span>
               <span className="font-bold">{courseResources.length}</span>
             </div>

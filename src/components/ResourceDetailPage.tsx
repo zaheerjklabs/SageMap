@@ -28,12 +28,13 @@ import {
   Loader2,
   ChevronRight,
   ShieldCheck,
-  FolderGit2,
   BookMarked
 } from 'lucide-react';
 import { UdemyLogo } from './UdemyLogo';
+import { CourseraLogo } from './CourseraLogo';
 import { GitHubCardBanner } from './GitHubCardBanner';
 import { UdemyCourseBanner } from './UdemyCourseBanner';
+import { CourseraCourseBanner } from './CourseraCourseBanner';
 import { ResourceItem, RoadmapTopic } from '../types';
 import { getResourceThumbnail } from './ResourceCard';
 import { deriveResourceDetails, getResourceSlug } from '../utils/resourcePageUtils';
@@ -752,6 +753,8 @@ Provide a concise, practical, technical answer with clean Markdown formatting, c
                   />
                 ) : resource.type === 'github' || (resource.type !== 'project' && resource.url && resource.url.includes('github.com')) ? (
                   <GitHubCardBanner resource={resource} />
+                ) : (resource.type === 'course' && (resource.url?.includes('coursera.org') || resource.platform === 'Coursera')) ? (
+                  <CourseraCourseBanner resource={resource} />
                 ) : (resource.type === 'course' && (resource.url?.includes('udemy.com') || resource.platform === 'Udemy')) ? (
                   <UdemyCourseBanner resource={resource} />
                 ) : (

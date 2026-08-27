@@ -20,6 +20,9 @@ import {
 import { GitHubCardBanner } from './GitHubCardBanner';
 import { UdemyCourseBanner } from './UdemyCourseBanner';
 import { UdemyLogo } from './UdemyLogo';
+import { CourseraCourseBanner } from './CourseraCourseBanner';
+import { CourseraLogo } from './CourseraLogo';
+import { GraduationCap } from 'lucide-react';
 import { ResourceItem, ResourceType } from '../types';
 
 interface ResourceCardProps {
@@ -87,6 +90,9 @@ export const ResourceCard: React.FC<ResourceCardProps> = ({
   isDragOver = false,
   dragHandleProps
 }) => {
+  const isCoursera = resource.url?.includes('coursera.org') || resource.platform === 'Coursera';
+  const isUdemy = resource.url?.includes('udemy.com') || resource.platform === 'Udemy';
+
   const getTypeBadge = (type: ResourceType) => {
     switch (type) {
       case 'youtube':
@@ -106,8 +112,26 @@ export const ResourceCard: React.FC<ResourceCardProps> = ({
           glow: 'group-hover:border-emerald-500/60'
         };
       case 'course':
+        if (isCoursera) {
+          return {
+            icon: <CourseraLogo className="w-3.5 h-3.5 text-blue-400 shrink-0" />,
+            label: 'Coursera Course',
+            border: 'border-blue-500/40',
+            bg: 'bg-blue-950/80 text-blue-300',
+            glow: 'group-hover:border-blue-500/60'
+          };
+        }
+        if (isUdemy) {
+          return {
+            icon: <UdemyLogo className="w-3.5 h-3.5 text-purple-400 shrink-0" />,
+            label: 'Udemy Course',
+            border: 'border-purple-500/40',
+            bg: 'bg-purple-950/80 text-purple-300',
+            glow: 'group-hover:border-purple-500/60'
+          };
+        }
         return {
-          icon: <UdemyLogo className="w-3.5 h-3.5 text-purple-400 shrink-0" />,
+          icon: <GraduationCap className="w-3.5 h-3.5 text-purple-400 shrink-0" />,
           label: resource.platform || 'Online Course',
           border: 'border-purple-500/40',
           bg: 'bg-purple-950/80 text-purple-300',
@@ -240,6 +264,8 @@ export const ResourceCard: React.FC<ResourceCardProps> = ({
           />
         ) : resource.type === 'github' || (resource.type !== 'project' && resource.url && resource.url.includes('github.com')) ? (
           <GitHubCardBanner resource={resource} />
+        ) : (resource.type === 'course' && (resource.url?.includes('coursera.org') || resource.platform === 'Coursera')) ? (
+          <CourseraCourseBanner resource={resource} />
         ) : (resource.type === 'course' && (resource.url?.includes('udemy.com') || resource.platform === 'Udemy')) ? (
           <UdemyCourseBanner resource={resource} />
         ) : (

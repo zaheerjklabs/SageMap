@@ -38,6 +38,7 @@ export const ResourceModal: React.FC<ResourceModalProps> = ({
   const [type, setType] = useState<ResourceType>('youtube');
   const [title, setTitle] = useState('');
   const [url, setUrl] = useState('');
+  const [platform, setPlatform] = useState<string>('Coursera');
   const [description, setDescription] = useState('');
   const [difficulty, setDifficulty] = useState<DifficultyLevel>('Intermediate');
   const [channelOrAuthor, setChannelOrAuthor] = useState('');
@@ -57,6 +58,7 @@ export const ResourceModal: React.FC<ResourceModalProps> = ({
       setType(editingResource.type);
       setTitle(editingResource.title || '');
       setUrl(editingResource.url || '');
+      setPlatform(editingResource.platform || (editingResource.url?.includes('udemy.com') ? 'Udemy' : 'Coursera'));
       setImageUrl(editingResource.imageUrl || editingResource.thumbnailUrl || '');
       setDescription(editingResource.description || '');
       setDifficulty(editingResource.difficulty || 'Intermediate');
@@ -90,6 +92,7 @@ export const ResourceModal: React.FC<ResourceModalProps> = ({
       setType('youtube');
       setTitle('');
       setUrl('');
+      setPlatform('Coursera');
       setDescription('');
       setDifficulty('Intermediate');
       setChannelOrAuthor('');
@@ -101,6 +104,24 @@ export const ResourceModal: React.FC<ResourceModalProps> = ({
       setHighlightsText('');
     }
   }, [editingResource, initialTopicId, isOpen]);
+
+  const handleUrlChange = (newUrl: string) => {
+    setUrl(newUrl);
+    const trimmed = newUrl.trim().toLowerCase();
+    if (trimmed.includes('coursera.org')) {
+      setType('course');
+      setPlatform('Coursera');
+    } else if (trimmed.includes('udemy.com')) {
+      setType('course');
+      setPlatform('Udemy');
+    } else if (trimmed.includes('youtube.com') || trimmed.includes('youtu.be')) {
+      setType('youtube');
+    } else if (trimmed.includes('github.com')) {
+      setType('github');
+    } else if (trimmed.includes('arxiv.org')) {
+      setType('paper');
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -163,7 +184,10 @@ export const ResourceModal: React.FC<ResourceModalProps> = ({
       isEdited: isEdit ? true : undefined,
       ...(type === 'youtube' && { channelName: channelOrAuthor, duration: durationOrStars }),
       ...(type === 'github' && { author: channelOrAuthor, stars: durationOrStars }),
-      ...(type === 'course' && { instructor: channelOrAuthor, platform: 'Udemy' }),
+      ...(type === 'course' && { 
+        instructor: channelOrAuthor, 
+        platform: (platform as any) || (url.includes('udemy.com') ? 'Udemy' : 'Coursera') 
+      }),
       ...(type === 'paper' && { authors: channelOrAuthor, year: durationOrStars, venue: editingResource?.venue || 'arXiv' }),
       ...(type === 'book' && { bookAuthor: channelOrAuthor, bookYear: durationOrStars }),
       ...(type === 'documentation' && { siteName: channelOrAuthor }),
@@ -283,7 +307,7 @@ export const ResourceModal: React.FC<ResourceModalProps> = ({
               required
               placeholder="https://..."
               value={url}
-              onChange={(e) => setUrl(e.target.value)}
+              onChange={(e) => handleUrlChange(e.target.value)}
               className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-xs text-slate-200 focus:outline-none focus:border-amber-400 font-mono text-[11px]"
             />
           </div>
@@ -309,6 +333,29 @@ export const ResourceModal: React.FC<ResourceModalProps> = ({
               )}
             </div>
           </div>
+
+          {/* Course Platform Selector (When type === 'course') */}
+          {type === 'course' && (
+            <div>
+              <label className="text-xs font-bold text-purple-400 block mb-1.5">
+                Course Provider / Platform
+              </label>
+              <select
+                value={platform}
+                onChange={(e) => setPlatform(e.target.value)}
+                className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-purple-500/40 text-xs font-bold text-purple-200 focus:outline-none focus:border-purple-400"
+              >
+                <option value="Coursera">Coursera (Specialization / University)</option>
+                <option value="Udemy">Udemy (Masterclass / Hands-on Course)</option>
+                <option value="DeepLearning.AI">DeepLearning.AI</option>
+                <option value="Stanford Online">Stanford Online</option>
+                <option value="Fast.ai">Fast.ai</option>
+                <option value="MIT OpenCourseWare">MIT OpenCourseWare</option>
+                <option value="edX">edX</option>
+                <option value="FreeCodeCamp">FreeCodeCamp</option>
+              </select>
+            </div>
+          )}
 
           {/* Description */}
           <div>
