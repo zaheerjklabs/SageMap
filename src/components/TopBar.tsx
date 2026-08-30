@@ -18,7 +18,9 @@ import {
   Newspaper,
   MessageSquarePlus,
   Inbox,
-  Heart
+  Heart,
+  MessageSquare,
+  BookMarked
 } from 'lucide-react';
 import { ViewMode } from '../types';
 
@@ -46,6 +48,8 @@ interface TopBarProps {
   isFetching?: boolean;
   onOpenSageAi?: () => void;
   onOpenFeedback?: () => void;
+  onOpenCommunity?: () => void;
+  communityPostCount?: number;
   onOpenAdminInbox?: () => void;
   unreadFeedbackCount?: number;
 }
@@ -74,6 +78,8 @@ export const TopBar: React.FC<TopBarProps> = ({
   isFetching = false,
   onOpenSageAi,
   onOpenFeedback,
+  onOpenCommunity,
+  communityPostCount = 0,
   onOpenAdminInbox,
   unreadFeedbackCount = 0
 }) => {
@@ -151,6 +157,23 @@ export const TopBar: React.FC<TopBarProps> = ({
             >
               <Heart className="w-3.5 h-3.5 text-amber-400 fill-amber-400/20 group-hover:scale-110 transition-transform shrink-0" />
               <span>Feedback</span>
+            </button>
+          )}
+
+          {/* Community Q&A Discussions Button */}
+          {onOpenCommunity && (
+            <button
+              onClick={onOpenCommunity}
+              className="flex px-2.5 sm:px-3 py-1.5 rounded-xl bg-slate-900/90 hover:bg-slate-800 border border-slate-750 hover:border-cyan-500/40 text-xs font-bold text-slate-200 hover:text-cyan-300 items-center gap-1.5 transition-all shrink-0 whitespace-nowrap shadow-sm group"
+              title="Open Community Q&A and Discussions"
+            >
+              <MessageSquare className="w-3.5 h-3.5 text-cyan-400 group-hover:scale-110 transition-transform shrink-0" />
+              <span>Community</span>
+              {communityPostCount > 0 && (
+                <span className="px-1.5 py-0.2 rounded-full text-[10px] font-mono font-black bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
+                  {communityPostCount}
+                </span>
+              )}
             </button>
           )}
 
@@ -382,6 +405,20 @@ export const TopBar: React.FC<TopBarProps> = ({
           >
             <Code2 className="w-3.5 h-3.5 shrink-0 text-amber-400" />
             <span>Projects</span>
+          </button>
+
+          {/* 10. Documentation */}
+          <button
+            onClick={() => onViewModeChange('documentation')}
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all whitespace-nowrap shrink-0 ${
+              viewMode === 'documentation'
+                ? 'bg-amber-500 text-slate-950 shadow-md font-black shadow-amber-500/25'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+            }`}
+            title="Official Frameworks, APIs & Library Documentation"
+          >
+            <BookMarked className="w-3.5 h-3.5 shrink-0 text-emerald-400" />
+            <span>Documentation</span>
           </button>
         </div>
       </div>

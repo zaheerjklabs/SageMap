@@ -34,10 +34,12 @@ import { DeleteConfirmModal } from './components/DeleteConfirmModal';
 import { AuthModal } from './components/AuthModal';
 import { FeedbackModal } from './components/FeedbackModal';
 import { AdminFeedbackInboxModal } from './components/AdminFeedbackInboxModal';
+import { CommunityModal } from './components/CommunityModal';
 import { SageAITutorDrawer } from './components/SageAITutorDrawer';
 import { parseResourceIdFromHash } from './utils/resourcePageUtils';
 import { Bot } from 'lucide-react';
-import { RoadmapTopic as RoadmapTopicType } from './types';
+import { RoadmapTopic as RoadmapTopicType, CommunityPost } from './types';
+import { fetchAllCommunityPosts, subscribeToCommunityChanges } from './services/communityService';
 
 export default function App() {
   const { isAdmin, isLoading: authLoading, signIn, signUp, signOut, user, isPasswordRecovery } = useAuth();
@@ -95,6 +97,10 @@ export default function App() {
   const [isAdminInboxOpen, setIsAdminInboxOpen] = useState<boolean>(false);
   const [feedbackTopicId, setFeedbackTopicId] = useState<number | undefined>(undefined);
 
+  // Community Q&A & Discussions States
+  const [communityPosts, setCommunityPosts] = useState<CommunityPost[]>([]);
+  const [isCommunityOpen, setIsCommunityOpen] = useState<boolean>(false);
+
   const [collections, setCollections] = useState<UserCollections>(() => loadCollectionsFromStorage());
 
   const showToast = (msg: string) => {
@@ -107,6 +113,12 @@ export default function App() {
   const refreshFeedbacks = useCallback(async () => {
     const list = await fetchAllFeedbacks();
     setFeedbacks(list);
+    return list;
+  }, []);
+
+  const refreshCommunityPosts = useCallback(async () => {
+    const list = await fetchAllCommunityPosts();
+    setCommunityPosts(list);
     return list;
   }, []);
 
@@ -137,11 +149,22 @@ export default function App() {
     return result;
   }, []);
 
-  // Fetch initial resources & feedback on mount
+  // Fetch initial resources, feedback & community discussions on mount
   useEffect(() => {
     refreshResources().finally(() => setResourcesLoading(false));
     refreshFeedbacks();
-  }, [refreshResources, refreshFeedbacks]);
+    refreshCommunityPosts();
+  }, [refreshResources, refreshFeedbacks, refreshCommunityPosts]);
+
+  // Subscribe to real-time community changes
+  useEffect(() => {
+    const unsubscribeCommunity = subscribeToCommunityChanges(() => {
+      refreshCommunityPosts();
+    });
+    return () => {
+      unsubscribeCommunity();
+    };
+  }, [refreshCommunityPosts]);
 
   // Subscribe to real-time feedback submissions and triage updates
   useEffect(() => {
@@ -257,6 +280,8 @@ export default function App() {
         setViewMode('books');
       } else if (cleanHash === 'blogs' || cleanHash === 'articles') {
         setViewMode('blogs');
+      } else if (cleanHash === 'documentation' || cleanHash === 'docs') {
+        setViewMode('documentation');
       } else if (cleanHash === 'explorer' || cleanHash === 'resources') {
         setViewMode('explorer');
       } else if (cleanHash === 'canvas' || cleanHash === 'roadmap') {
@@ -572,6 +597,8 @@ export default function App() {
           setFeedbackTopicId(currentTopicId);
           setIsFeedbackModalOpen(true);
         }}
+        onOpenCommunity={() => setIsCommunityOpen(true)}
+        communityPostCount={communityPosts.length}
         onOpenAdminInbox={isAdmin ? () => setIsAdminInboxOpen(true) : undefined}
         unreadFeedbackCount={unreadFeedbackCount}
       />
@@ -619,6 +646,7 @@ export default function App() {
               setFeedbackTopicId(currentTopicId);
               setIsFeedbackModalOpen(true);
             }}
+            onOpenCommunity={() => setIsCommunityOpen(true)}
           />
 
           <main className="flex-1 flex flex-col overflow-hidden relative">
@@ -774,6 +802,25 @@ export default function App() {
               />
             )}
 
+            {viewMode === 'documentation' && (
+              <ResourceExplorerView
+                topics={resolvedTopics}
+                savedResources={collections.savedResources}
+                onToggleSave={handleToggleSaveResource}
+                onSelectTopic={handleSelectTopic}
+                onOpenResourceDetail={handleOpenResourceDetail}
+                isAdmin={isAdmin}
+                resourceOrder={collections.resourceOrder}
+                onReorderResources={isAdmin ? handleReorderResources : undefined}
+                onAddResourceClick={adminAddHandler}
+                onEditResource={adminEditHandler}
+                onDeleteResource={adminDeleteHandler}
+                defaultType="documentation"
+                viewTitle="Official AI & ML Documentations & API References"
+                viewSubtitle="Official documentation, API references, cheat sheets, and quickstart guides for PyTorch, Hugging Face, LangChain, Triton, vLLM, and core libraries."
+              />
+            )}
+
             {viewMode === 'explorer' && (
               <ResourceExplorerView
                 topics={resolvedTopics}
@@ -854,6 +901,23 @@ export default function App() {
           refreshFeedbacks();
           showToast(msg);
         }}
+      />
+
+      <CommunityModal
+        isOpen={isCommunityOpen}
+        onClose={() => setIsCommunityOpen(false)}
+        posts={communityPosts}
+        onRefreshPosts={refreshCommunityPosts}
+        topics={resolvedTopics}
+        onSelectTopic={handleSelectTopic}
+        currentUser={user ? {
+          id: user.id,
+          email: user.email,
+          name: (user.user_metadata?.full_name as string) || user.email?.split('@')[0],
+          role: isAdmin ? 'admin' : 'user'
+        } : null}
+        onOpenAuthModal={() => setIsAuthModalOpen(true)}
+        onShowToast={showToast}
       />
 
       {isAdmin && (

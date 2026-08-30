@@ -134,7 +134,7 @@ export const ROADMAP_TOPICS: RoadmapTopic[] = [
         "resources": [],
         "accentColor": "amber",
         "glowColor": "rgba(245, 158, 11, 0.35)",
-        "borderColor": "#F59E0B",
+        "borderColor": "#cb8b1cff",
         "position": {
             "x": 750,
             "y": 100

@@ -10,7 +10,8 @@ import {
   BookOpen,
   ArrowRight,
   Github,
-  Heart
+  Heart,
+  MessageSquare
 } from 'lucide-react';
 import { ROADMAP_TOPICS } from '../data/roadmapData';
 import { RoadmapTopic } from '../types';
@@ -22,6 +23,7 @@ interface SidebarProps {
   onToggleOpen: () => void;
   onOpenTopicDashboard: (topicId: number) => void;
   onOpenFeedback?: () => void;
+  onOpenCommunity?: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -30,7 +32,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   isOpen,
   onToggleOpen,
   onOpenTopicDashboard,
-  onOpenFeedback
+  onOpenFeedback,
+  onOpenCommunity
 }) => {
   const [expandedTopicId, setExpandedTopicId] = useState<number | null>(currentTopicId);
 
@@ -178,9 +181,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
         })}
       </div>
 
-      {/* Sidebar Footer: SageMap & Developer Credits & Feedback */}
+      {/* Sidebar Footer: SageMap & Developer Credits & Community & Feedback */}
       {isOpen ? (
         <div className="p-3 border-t border-slate-800/80 bg-slate-950/60 shrink-0 text-center space-y-2">
+          {onOpenCommunity && (
+            <button
+              onClick={onOpenCommunity}
+              className="w-full py-1.5 px-3 rounded-xl bg-slate-900/90 hover:bg-slate-850 hover:border-cyan-500/40 border border-slate-800 text-[11px] font-bold text-slate-300 hover:text-cyan-300 transition-all flex items-center justify-center gap-1.5 shadow-sm group"
+            >
+              <MessageSquare className="w-3.5 h-3.5 text-cyan-400 group-hover:scale-110 transition-transform" />
+              <span>Community Q&A</span>
+            </button>
+          )}
+
           {onOpenFeedback && (
             <button
               onClick={onOpenFeedback}
@@ -212,6 +225,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
       ) : (
         <div className="p-2 border-t border-slate-800 text-center shrink-0 space-y-2">
+          {onOpenCommunity && (
+            <button
+              onClick={onOpenCommunity}
+              className="p-1.5 rounded-lg text-slate-400 hover:text-cyan-400 hover:bg-slate-900 transition-colors mx-auto block"
+              title="Community Q&A"
+            >
+              <MessageSquare className="w-4 h-4 text-cyan-400" />
+            </button>
+          )}
           {onOpenFeedback && (
             <button
               onClick={onOpenFeedback}

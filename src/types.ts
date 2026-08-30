@@ -161,9 +161,10 @@ export type ViewMode =
   | 'courses' 
   | 'youtube' 
   | 'github' 
-  | 'papers' 
   | 'books' 
+  | 'papers' 
   | 'blogs' 
+  | 'documentation'
   | 'explorer';
 
 export interface UserCollections {
@@ -206,4 +207,41 @@ export interface FeedbackStats {
   starredCount: number;
   avgRating: number;
   byCategory: Record<FeedbackCategory, number>;
+}
+
+// Community Q&A, Help & Discussions Types
+export type CommunityCategory = 'question' | 'help' | 'discussion' | 'project' | 'resource';
+
+export interface CommunityReply {
+  id: string;
+  postId: string;
+  userId?: string;
+  userEmail?: string;
+  userName?: string;
+  userRole?: string;
+  content: string;
+  upvotes: number;
+  upvotedBy: string[];
+  isSolution?: boolean;
+  createdAt: string;
+}
+
+export interface CommunityPost {
+  id: string;
+  userId?: string;
+  userEmail?: string;
+  userName?: string;
+  userRole?: string;
+  title: string;
+  content: string;
+  category: CommunityCategory;
+  topicId?: number; // 1-10 or undefined for General
+  tags: string[];
+  upvotes: number;
+  upvotedBy: string[];
+  isSolved?: boolean;
+  replyCount: number;
+  createdAt: string;
+  updatedAt?: string;
+  replies?: CommunityReply[];
 }
