@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { ROADMAP_TOPICS } from './data/roadmapData';
-import { ViewMode, UserCollections, ResourceItem } from './types';
+import { ViewMode, UserCollections, ResourceItem, FeedbackItem } from './types';
 import { 
   loadCollectionsFromStorage, 
   saveCollectionsToStorage, 
@@ -17,6 +17,10 @@ import {
   pushWebsiteStateToSupabase,
   subscribeToResourceChanges
 } from './services/resourceService';
+import {
+  fetchAllFeedbacks,
+  subscribeToFeedbackChanges
+} from './services/feedbackService';
 import { useAuth } from './contexts/AuthContext';
 import { TopBar } from './components/TopBar';
 import { Sidebar } from './components/Sidebar';
@@ -28,6 +32,8 @@ import { ResourceModal } from './components/ResourceModal';
 import { TopicEditModal } from './components/TopicEditModal';
 import { DeleteConfirmModal } from './components/DeleteConfirmModal';
 import { AuthModal } from './components/AuthModal';
+import { FeedbackModal } from './components/FeedbackModal';
+import { AdminFeedbackInboxModal } from './components/AdminFeedbackInboxModal';
 import { SageAITutorDrawer } from './components/SageAITutorDrawer';
 import { parseResourceIdFromHash } from './utils/resourcePageUtils';
 import { Bot } from 'lucide-react';
@@ -83,6 +89,12 @@ export default function App() {
   const [isFetching, setIsFetching] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
+  // User Feedback & Admin Inbox States
+  const [feedbacks, setFeedbacks] = useState<FeedbackItem[]>([]);
+  const [isFeedbackModalOpen, setIsFeedbackModalOpen] = useState<boolean>(false);
+  const [isAdminInboxOpen, setIsAdminInboxOpen] = useState<boolean>(false);
+  const [feedbackTopicId, setFeedbackTopicId] = useState<number | undefined>(undefined);
+
   const [collections, setCollections] = useState<UserCollections>(() => loadCollectionsFromStorage());
 
   const showToast = (msg: string) => {
@@ -91,6 +103,12 @@ export default function App() {
       setToastMessage((current) => (current === msg ? null : current));
     }, 3500);
   };
+
+  const refreshFeedbacks = useCallback(async () => {
+    const list = await fetchAllFeedbacks();
+    setFeedbacks(list);
+    return list;
+  }, []);
 
   const refreshResources = useCallback(async () => {
     const result = await fetchAllResources();
@@ -119,10 +137,33 @@ export default function App() {
     return result;
   }, []);
 
-  // Fetch initial resources from Supabase on mount
+  // Fetch initial resources & feedback on mount
   useEffect(() => {
     refreshResources().finally(() => setResourcesLoading(false));
-  }, [refreshResources]);
+    refreshFeedbacks();
+  }, [refreshResources, refreshFeedbacks]);
+
+  // Subscribe to real-time feedback submissions and triage updates
+  useEffect(() => {
+    const unsubscribeFeedback = subscribeToFeedbackChanges(({ eventType, item, oldId }) => {
+      if (eventType === 'DELETE' && oldId) {
+        setFeedbacks((prev) => prev.filter((f) => f.id !== oldId));
+      } else if (eventType === 'UPDATE' && item) {
+        setFeedbacks((prev) => prev.map((f) => (f.id === item.id ? item : f)));
+      } else if (eventType === 'INSERT' && item) {
+        setFeedbacks((prev) => {
+          const exists = prev.some((f) => f.id === item.id);
+          if (exists) return prev.map((f) => (f.id === item.id ? item : f));
+          return [item, ...prev];
+        });
+        showToast(`📬 New feedback received: "${item.message.slice(0, 32)}..."`);
+      }
+    });
+
+    return () => {
+      unsubscribeFeedback();
+    };
+  }, []);
 
   // Subscribe to real-time updates from Supabase so all users see changes immediately
   useEffect(() => {
@@ -492,6 +533,9 @@ export default function App() {
   }, [dashboardTopicId, resolvedTopics]);
 
   const savedCount = Object.keys(collections.savedResources).filter((k) => collections.savedResources[k]).length;
+  const unreadFeedbackCount = useMemo(() => {
+    return feedbacks.filter((f) => f.status === 'new').length;
+  }, [feedbacks]);
 
   const adminEditHandler = isAdmin ? handleOpenEditResourceModal : undefined;
   const adminDeleteHandler = isAdmin ? handleOpenDeleteModal : undefined;
@@ -514,6 +558,7 @@ export default function App() {
         onToggleTheme={() => setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'))}
         savedResourcesCount={savedCount}
         isAdmin={isAdmin}
+        isCustomer={!isAdmin && Boolean(user)}
         userEmail={user?.email}
         onAddResourceClick={() => handleOpenAddResourceModal(currentTopicId)}
         onLoginClick={() => setIsAuthModalOpen(true)}
@@ -523,6 +568,12 @@ export default function App() {
         onFetchDb={handleFetchDb}
         isFetching={isFetching}
         onOpenSageAi={() => setIsSageAiOpen(true)}
+        onOpenFeedback={() => {
+          setFeedbackTopicId(currentTopicId);
+          setIsFeedbackModalOpen(true);
+        }}
+        onOpenAdminInbox={isAdmin ? () => setIsAdminInboxOpen(true) : undefined}
+        unreadFeedbackCount={unreadFeedbackCount}
       />
 
       {toastMessage && (
@@ -564,6 +615,10 @@ export default function App() {
             isOpen={isSidebarOpen}
             onToggleOpen={() => setIsSidebarOpen((prev) => !prev)}
             onOpenTopicDashboard={handleOpenTopicDashboard}
+            onOpenFeedback={() => {
+              setFeedbackTopicId(currentTopicId);
+              setIsFeedbackModalOpen(true);
+            }}
           />
 
           <main className="flex-1 flex flex-col overflow-hidden relative">
@@ -790,6 +845,29 @@ export default function App() {
         onSelectTopic={handleSelectTopic}
       />
 
+      <FeedbackModal
+        isOpen={isFeedbackModalOpen}
+        onClose={() => setIsFeedbackModalOpen(false)}
+        topics={resolvedTopics}
+        initialTopicId={feedbackTopicId}
+        onFeedbackSubmitted={(msg) => {
+          refreshFeedbacks();
+          showToast(msg);
+        }}
+      />
+
+      {isAdmin && (
+        <AdminFeedbackInboxModal
+          isOpen={isAdminInboxOpen}
+          onClose={() => setIsAdminInboxOpen(false)}
+          feedbacks={feedbacks}
+          onRefreshFeedbacks={refreshFeedbacks}
+          topics={resolvedTopics}
+          onSelectTopic={handleSelectTopic}
+          onShowToast={showToast}
+        />
+      )}
+
       {isAdmin && (
         <>
           <ResourceModal
@@ -828,7 +906,6 @@ export default function App() {
       <AuthModal
         isOpen={isAuthModalOpen}
         onClose={() => setIsAuthModalOpen(false)}
-        onSignIn={signIn}
       />
     </div>
   );

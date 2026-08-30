@@ -15,7 +15,10 @@ import {
   Tv,
   FileText,
   BookOpen,
-  Newspaper
+  Newspaper,
+  MessageSquarePlus,
+  Inbox,
+  Heart
 } from 'lucide-react';
 import { ViewMode } from '../types';
 
@@ -32,6 +35,7 @@ interface TopBarProps {
   onToggleTheme: () => void;
   savedResourcesCount: number;
   isAdmin?: boolean;
+  isCustomer?: boolean;
   userEmail?: string;
   onAddResourceClick: () => void;
   onLoginClick: () => void;
@@ -41,6 +45,9 @@ interface TopBarProps {
   onFetchDb?: () => Promise<void>;
   isFetching?: boolean;
   onOpenSageAi?: () => void;
+  onOpenFeedback?: () => void;
+  onOpenAdminInbox?: () => void;
+  unreadFeedbackCount?: number;
 }
 
 export const TopBar: React.FC<TopBarProps> = ({
@@ -56,6 +63,7 @@ export const TopBar: React.FC<TopBarProps> = ({
   onToggleTheme,
   savedResourcesCount,
   isAdmin = false,
+  isCustomer = false,
   userEmail,
   onAddResourceClick,
   onLoginClick,
@@ -64,7 +72,10 @@ export const TopBar: React.FC<TopBarProps> = ({
   isSyncing = false,
   onFetchDb,
   isFetching = false,
-  onOpenSageAi
+  onOpenSageAi,
+  onOpenFeedback,
+  onOpenAdminInbox,
+  unreadFeedbackCount = 0
 }) => {
   return (
     <header className="sticky top-0 z-30 flex flex-col w-full bg-[#0D1117]/95 backdrop-blur-2xl text-slate-300 font-sans select-none shadow-xl shadow-black/40 border-b border-slate-800/90 transition-colors">
@@ -131,6 +142,35 @@ export const TopBar: React.FC<TopBarProps> = ({
             </button>
           )}
 
+          {/* User Feedback Button (Available for everyone) */}
+          {onOpenFeedback && (
+            <button
+              onClick={onOpenFeedback}
+              className="flex px-2.5 sm:px-3 py-1.5 rounded-xl bg-slate-900/90 hover:bg-slate-800 border border-slate-750 hover:border-amber-500/40 text-xs font-bold text-slate-200 hover:text-amber-300 items-center gap-1.5 transition-all shrink-0 whitespace-nowrap shadow-sm group"
+              title="Share feedback, suggest a resource, or report an issue"
+            >
+              <Heart className="w-3.5 h-3.5 text-amber-400 fill-amber-400/20 group-hover:scale-110 transition-transform shrink-0" />
+              <span>Feedback</span>
+            </button>
+          )}
+
+          {/* Admin Feedback Inbox Button */}
+          {isAdmin && onOpenAdminInbox && (
+            <button
+              onClick={onOpenAdminInbox}
+              className="flex px-2.5 sm:px-3 py-1.5 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/40 text-xs font-bold text-amber-300 items-center gap-1.5 transition-all shrink-0 whitespace-nowrap shadow-sm relative group"
+              title="Open Admin Feedback Inbox"
+            >
+              <Inbox className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+              <span>Inbox</span>
+              {unreadFeedbackCount !== undefined && unreadFeedbackCount > 0 && (
+                <span className="px-1.5 py-0.2 rounded-full text-[10px] font-mono font-black bg-amber-400 text-slate-950 shadow-sm animate-pulse">
+                  {unreadFeedbackCount}
+                </span>
+              )}
+            </button>
+          )}
+
           {/* Admin Tools: Sync DB & Add Resource */}
           {isAdmin && (
             <>
@@ -161,30 +201,50 @@ export const TopBar: React.FC<TopBarProps> = ({
             </>
           )}
 
-          {/* Admin Auth Status / Login / Logout */}
-          {isAdmin ? (
-            <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-emerald-950/60 border border-emerald-500/50 text-xs shrink-0 shadow-sm">
-              <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-              <span className="text-emerald-300 font-bold truncate max-w-[80px] sm:max-w-[120px]">
-                {userEmail?.split('@')[0] || 'Admin'}
-              </span>
-              <button
-                onClick={onLogoutClick}
-                className="p-1 rounded-lg text-slate-300 hover:text-red-400 hover:bg-red-500/20 transition-all flex items-center gap-1"
-                title="Sign out as Admin"
-              >
-                <LogOut className="w-3.5 h-3.5 text-red-400" />
-                <span className="text-[10px] font-bold text-red-300 hidden md:inline">Logout</span>
-              </button>
-            </div>
+          {/* User & Admin Auth Status / Sign In / Logout */}
+          {userEmail ? (
+            isAdmin ? (
+              /* Admin Logged-In Badge */
+              <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-emerald-950/60 border border-emerald-500/50 text-xs shrink-0 shadow-sm">
+                <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                <span className="text-emerald-300 font-bold truncate max-w-[80px] sm:max-w-[120px]" title={userEmail}>
+                  {userEmail.split('@')[0]}
+                </span>
+                <button
+                  onClick={onLogoutClick}
+                  className="p-1 rounded-lg text-slate-300 hover:text-red-400 hover:bg-red-500/20 transition-all flex items-center gap-1"
+                  title="Sign out as Admin"
+                >
+                  <LogOut className="w-3.5 h-3.5 text-red-400" />
+                  <span className="text-[10px] font-bold text-red-300 hidden md:inline">Logout</span>
+                </button>
+              </div>
+            ) : (
+              /* Customer / Learner Logged-In Badge */
+              <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-cyan-950/60 border border-cyan-500/50 text-xs shrink-0 shadow-sm">
+                <GraduationCap className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+                <span className="text-cyan-300 font-bold truncate max-w-[80px] sm:max-w-[120px]" title={userEmail}>
+                  {userEmail.split('@')[0]}
+                </span>
+                <button
+                  onClick={onLogoutClick}
+                  className="p-1 rounded-lg text-slate-300 hover:text-red-400 hover:bg-red-500/20 transition-all flex items-center gap-1"
+                  title="Sign out"
+                >
+                  <LogOut className="w-3.5 h-3.5 text-red-400" />
+                  <span className="text-[10px] font-bold text-red-300 hidden md:inline">Logout</span>
+                </button>
+              </div>
+            )
           ) : (
+            /* Visitor / Guest Sign In Button */
             <button
               onClick={onLoginClick}
-              className="flex px-2.5 sm:px-3 py-1.5 rounded-xl bg-slate-900/90 hover:bg-slate-800/90 border border-slate-750 hover:border-amber-500/40 text-xs font-bold text-slate-200 items-center gap-1.5 transition-all shrink-0 whitespace-nowrap shadow-sm"
-              title="Admin sign in"
+              className="flex px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-500/20 via-amber-400/20 to-cyan-500/20 hover:from-amber-500/30 hover:to-cyan-500/30 border border-amber-500/40 text-xs font-bold text-amber-300 items-center gap-1.5 transition-all shrink-0 whitespace-nowrap shadow-sm group"
+              title="Sign in with Google, GitHub, Phone OTP, or Email"
             >
-              <LogIn className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-              <span>Admin</span>
+              <LogIn className="w-3.5 h-3.5 text-amber-400 group-hover:scale-110 transition-transform shrink-0" />
+              <span>Sign In / Login</span>
             </button>
           )}
         </div>

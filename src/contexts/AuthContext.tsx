@@ -9,11 +9,15 @@ interface AuthContextValue {
   session: Session | null;
   role: UserRole | null;
   isAdmin: boolean;
+  isCustomer: boolean;
   isLoading: boolean;
   isPasswordRecovery: boolean;
   setIsPasswordRecovery: (val: boolean) => void;
   signIn: (email: string, password: string) => Promise<{ error: string | null; role?: UserRole | null }>;
-  signUp: (email: string, password: string) => Promise<{ error: string | null; role?: UserRole | null; requiresEmailConfirmation?: boolean }>;
+  signUp: (email: string, password: string, asRole?: UserRole, fullName?: string) => Promise<{ error: string | null; role?: UserRole | null; requiresEmailConfirmation?: boolean }>;
+  signInWithOAuth: (provider: 'github' | 'google') => Promise<{ error: string | null }>;
+  sendPhoneOtp: (phone: string) => Promise<{ error: string | null; message?: string }>;
+  verifyPhoneOtp: (phone: string, token: string) => Promise<{ error: string | null; role?: UserRole | null }>;
   signInWithOtp: (email: string) => Promise<{ error: string | null; message?: string }>;
   resetPasswordForEmail: (email: string) => Promise<{ error: string | null; message?: string }>;
   updatePassword: (newPassword: string) => Promise<{ error: string | null }>;
@@ -43,11 +47,12 @@ async function fetchUserRole(user: User): Promise<UserRole> {
       return data.role as UserRole;
     }
 
-    // 3. If profile doesn't exist yet, insert with 'admin' (for easy first admin setup)
+    // 3. If profile doesn't exist yet, insert with default 'user' (or 'admin' if meta specifies)
     if (!data) {
+      const defaultRole: UserRole = metaRole === 'admin' ? 'admin' : 'user';
       const { data: newProfile, error: insertError } = await supabase
         .from('profiles')
-        .insert({ id: user.id, email: user.email, role: 'admin' })
+        .insert({ id: user.id, email: user.email, role: defaultRole })
         .select('role')
         .maybeSingle();
 
@@ -196,7 +201,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [loadRole]);
 
-  const signUp = useCallback(async (email: string, password: string) => {
+  const signUp = useCallback(async (email: string, password: string, asRole: UserRole = 'user', fullName?: string) => {
     try {
       const redirectUrl = getAppRedirectUrl();
       const { data, error } = await supabase.auth.signUp({
@@ -204,6 +209,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         password,
         options: {
           emailRedirectTo: redirectUrl,
+          data: {
+            full_name: fullName || email.split('@')[0],
+            role: asRole
+          }
         }
       });
 
@@ -212,11 +221,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       if (data.user) {
-        // Auto-insert profile as admin
+        // Auto-insert profile with requested role
         try {
           await supabase
             .from('profiles')
-            .upsert({ id: data.user.id, email: data.user.email, role: 'admin' }, { onConflict: 'id' });
+            .upsert({ id: data.user.id, email: data.user.email, role: asRole }, { onConflict: 'id' });
         } catch {
           // non-blocking
         }
@@ -224,15 +233,77 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // If user session is immediate (email confirm disabled in Supabase)
         if (data.session) {
           const userRole = await loadRole(data.user);
-          return { error: null, role: userRole || 'admin', requiresEmailConfirmation: false };
+          return { error: null, role: userRole || asRole, requiresEmailConfirmation: false };
         }
 
-        return { error: null, role: 'admin', requiresEmailConfirmation: true };
+        return { error: null, role: asRole, requiresEmailConfirmation: true };
       }
 
       return { error: null };
     } catch (err: any) {
       return { error: err?.message || 'Network error occurred during registration.' };
+    }
+  }, [loadRole]);
+
+  const signInWithOAuth = useCallback(async (provider: 'github' | 'google') => {
+    try {
+      const redirectUrl = getAppRedirectUrl();
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider,
+        options: {
+          redirectTo: redirectUrl,
+        }
+      });
+
+      if (error) {
+        return { error: error.message };
+      }
+
+      return { error: null };
+    } catch (err: any) {
+      return { error: err?.message || `Failed to start ${provider} login.` };
+    }
+  }, []);
+
+  const sendPhoneOtp = useCallback(async (phone: string) => {
+    try {
+      const { error } = await supabase.auth.signInWithOtp({
+        phone: phone.trim()
+      });
+
+      if (error) {
+        return { error: error.message };
+      }
+
+      return {
+        error: null,
+        message: `6-digit verification code sent to ${phone}!`
+      };
+    } catch (err: any) {
+      return { error: err?.message || 'Failed to send phone OTP.' };
+    }
+  }, []);
+
+  const verifyPhoneOtp = useCallback(async (phone: string, token: string) => {
+    try {
+      const { data, error } = await supabase.auth.verifyOtp({
+        phone: phone.trim(),
+        token: token.trim(),
+        type: 'sms'
+      });
+
+      if (error) {
+        return { error: error.message };
+      }
+
+      if (data.user) {
+        const userRole = await loadRole(data.user);
+        return { error: null, role: userRole };
+      }
+
+      return { error: null };
+    } catch (err: any) {
+      return { error: err?.message || 'Failed to verify OTP code.' };
     }
   }, [loadRole]);
 
@@ -307,11 +378,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     session,
     role,
     isAdmin: role === 'admin',
+    isCustomer: Boolean(user && role !== 'admin'),
     isLoading,
     isPasswordRecovery,
     setIsPasswordRecovery,
     signIn,
     signUp,
+    signInWithOAuth,
+    sendPhoneOtp,
+    verifyPhoneOtp,
     signInWithOtp,
     resetPasswordForEmail,
     updatePassword,

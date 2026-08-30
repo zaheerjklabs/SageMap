@@ -9,7 +9,8 @@ import {
   ChevronDown,
   BookOpen,
   ArrowRight,
-  Github
+  Github,
+  Heart
 } from 'lucide-react';
 import { ROADMAP_TOPICS } from '../data/roadmapData';
 import { RoadmapTopic } from '../types';
@@ -20,6 +21,7 @@ interface SidebarProps {
   isOpen: boolean;
   onToggleOpen: () => void;
   onOpenTopicDashboard: (topicId: number) => void;
+  onOpenFeedback?: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -27,7 +29,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onSelectTopic,
   isOpen,
   onToggleOpen,
-  onOpenTopicDashboard
+  onOpenTopicDashboard,
+  onOpenFeedback
 }) => {
   const [expandedTopicId, setExpandedTopicId] = useState<number | null>(currentTopicId);
 
@@ -175,15 +178,25 @@ export const Sidebar: React.FC<SidebarProps> = ({
         })}
       </div>
 
-      {/* Sidebar Footer: SageMap & Developer Credits */}
+      {/* Sidebar Footer: SageMap & Developer Credits & Feedback */}
       {isOpen ? (
-        <div className="p-3 border-t border-slate-800/80 bg-slate-950/60 shrink-0 text-center">
+        <div className="p-3 border-t border-slate-800/80 bg-slate-950/60 shrink-0 text-center space-y-2">
+          {onOpenFeedback && (
+            <button
+              onClick={onOpenFeedback}
+              className="w-full py-1.5 px-3 rounded-xl bg-slate-900/90 hover:bg-slate-850 hover:border-amber-500/40 border border-slate-800 text-[11px] font-bold text-slate-300 hover:text-amber-300 transition-all flex items-center justify-center gap-1.5 shadow-sm group"
+            >
+              <Heart className="w-3.5 h-3.5 text-amber-400 fill-amber-400/20 group-hover:scale-110 transition-transform" />
+              <span>Share Feedback</span>
+            </button>
+          )}
+
           <div className="text-[11px] font-bold text-slate-300 flex items-center justify-center gap-1.5 whitespace-nowrap">
             <span className="text-amber-400">SageMap</span>
             <span className="text-slate-600">•</span>
             <span className="text-slate-400 text-[10px]">AI/ML Roadmap</span>
           </div>
-          <div className="mt-1.5 flex items-center justify-center gap-1.5 text-[10.5px] font-mono text-slate-400 whitespace-nowrap">
+          <div className="flex items-center justify-center gap-1.5 text-[10.5px] font-mono text-slate-400 whitespace-nowrap">
             <span>dev:</span>
             <a 
               href="https://github.com/mdzaheerjk" 
@@ -198,7 +211,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </div>
         </div>
       ) : (
-        <div className="p-2 border-t border-slate-800 text-center shrink-0">
+        <div className="p-2 border-t border-slate-800 text-center shrink-0 space-y-2">
+          {onOpenFeedback && (
+            <button
+              onClick={onOpenFeedback}
+              className="p-1.5 rounded-lg text-slate-400 hover:text-amber-400 hover:bg-slate-900 transition-colors mx-auto block"
+              title="Share Feedback"
+            >
+              <Heart className="w-4 h-4 text-amber-400" />
+            </button>
+          )}
           <a
             href="https://github.com/mdzaheerjk"
             target="_blank"

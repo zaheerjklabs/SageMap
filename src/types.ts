@@ -175,3 +175,35 @@ export interface UserCollections {
   lastVisitedTopicId: number;
   resourceOrder?: string[]; // admin custom resource drag-and-drop ordering
 }
+
+// User Feedback & Admin Feedback Inbox Types
+export type FeedbackCategory = 'feature' | 'bug' | 'content' | 'general' | 'question';
+
+export type FeedbackStatus = 'new' | 'in_progress' | 'resolved' | 'archived';
+
+export interface FeedbackItem {
+  id: string;
+  userId?: string;
+  userEmail?: string;
+  userName?: string;
+  category: FeedbackCategory;
+  topicId?: number;
+  rating?: number; // 1 - 5 stars
+  message: string;
+  status: FeedbackStatus;
+  isStarred?: boolean;
+  adminNotes?: string;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface FeedbackStats {
+  total: number;
+  newCount: number;
+  inProgressCount: number;
+  resolvedCount: number;
+  archivedCount: number;
+  starredCount: number;
+  avgRating: number;
+  byCategory: Record<FeedbackCategory, number>;
+}
