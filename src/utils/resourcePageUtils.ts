@@ -1,4 +1,5 @@
 import { ResourceItem, RoadmapTopic } from '../types';
+import { parseYouTubeUrl } from './youtubeUtils';
 
 export interface DerivedResourceDetails {
   categoryLabel: string;
@@ -129,12 +130,20 @@ export function deriveResourceDetails(
 
   const badgeStyles = getResourceBadgeStyles(categoryTag);
 
+  // Parse YouTube URL if applicable
+  const ytParsed = resource.type === 'youtube' ? parseYouTubeUrl(resource.url) : null;
+  const isPlaylist = resource.type === 'youtube' && (resource.videoType === 'Playlist' || !!ytParsed?.isPlaylist);
+
   // Stats highlight string
   let statsHighlight = 'Complete Guide';
   if (resource.duration) {
     statsHighlight = resource.duration;
   } else if (resource.type === 'youtube') {
-    statsHighlight = resource.videoType ? `${resource.videoType} • Video` : 'Video Lecture';
+    if (isPlaylist) {
+      statsHighlight = resource.videoCount ? `${resource.videoCount} Videos • Playlist` : 'YouTube Playlist Series';
+    } else {
+      statsHighlight = resource.videoType ? `${resource.videoType} • Video` : 'Video Lecture';
+    }
   } else if (resource.type === 'github' && resource.stars) {
     statsHighlight = `${resource.stars} GitHub Stars`;
   } else if (resource.type === 'course') {
@@ -152,7 +161,7 @@ export function deriveResourceDetails(
   if (resource.type === 'project') {
     ctaText = 'Start Project ↗';
   } else if (resource.type === 'youtube') {
-    ctaText = 'Watch on YouTube ↗';
+    ctaText = isPlaylist ? 'Watch Playlist on YouTube ↗' : 'Watch on YouTube ↗';
   } else if (resource.type === 'github') {
     ctaText = 'Explore GitHub Repo ↗';
   } else if (resource.type === 'course') {
@@ -168,7 +177,15 @@ export function deriveResourceDetails(
   // Access Tier Badge
   let accessBadge = 'Free & Open Source';
   let accessNote = 'Curated AI Resource. Complete Access.';
-  if (resource.type === 'project') {
+  if (resource.type === 'youtube') {
+    if (isPlaylist) {
+      accessBadge = 'Free YouTube Playlist';
+      accessNote = 'Curated comprehensive video series playlist with full unrestricted access.';
+    } else {
+      accessBadge = 'Free YouTube Masterclass';
+      accessNote = 'Curated high-impact video lecture with full unrestricted access.';
+    }
+  } else if (resource.type === 'project') {
     accessBadge = resource.projectTier ? `${resource.projectTier} Tier Project` : 'Hands-on Pro Project';
     accessNote = 'One Roadmap. 100+ Projects. Unlimited Access.';
   } else if (resource.type === 'course') {

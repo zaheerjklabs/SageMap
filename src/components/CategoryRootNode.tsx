@@ -46,8 +46,8 @@ export const CategoryRootNode: React.FC<CategoryRootNodeProps> = ({
       case 'youtube':
         return {
           icon: <Tv className="w-4 h-4 text-red-400" />,
-          title: 'YouTube Resources',
-          tag: 'Video & Courses',
+          title: 'YouTube Videos & Playlists',
+          tag: 'Playlists & Masterclasses',
           borderColor: 'border-red-500/40 hover:border-red-400',
           bgColor: 'bg-red-950/20',
           textColor: 'text-red-300',

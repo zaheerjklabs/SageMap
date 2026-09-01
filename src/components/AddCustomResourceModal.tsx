@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { 
   X, 
   Tv, 
+  ListVideo,
   Github, 
   GraduationCap, 
   Code2, 
@@ -14,6 +15,7 @@ import {
 } from 'lucide-react';
 import { ROADMAP_TOPICS } from '../data/roadmapData';
 import { ResourceItem, ResourceType, DifficultyLevel } from '../types';
+import { parseYouTubeUrl } from '../utils/youtubeUtils';
 
 interface AddCustomResourceModalProps {
   isOpen: boolean;
@@ -30,6 +32,7 @@ export const AddCustomResourceModal: React.FC<AddCustomResourceModalProps> = ({
 }) => {
   const [topicId, setTopicId] = useState<number>(initialTopicId);
   const [type, setType] = useState<ResourceType>('youtube');
+  const [videoType, setVideoType] = useState<string>('Playlist');
   const [title, setTitle] = useState('');
   const [url, setUrl] = useState('');
   const [description, setDescription] = useState('');
@@ -40,6 +43,26 @@ export const AddCustomResourceModal: React.FC<AddCustomResourceModalProps> = ({
 
   if (!isOpen) return null;
 
+  const handleUrlChange = (newUrl: string) => {
+    setUrl(newUrl);
+    const trimmed = newUrl.trim().toLowerCase();
+    if (trimmed.includes('youtube.com') || trimmed.includes('youtu.be')) {
+      setType('youtube');
+      const ytInfo = parseYouTubeUrl(newUrl);
+      if (ytInfo.isPlaylist) {
+        setVideoType('Playlist');
+      } else if (ytInfo.videoId) {
+        setVideoType('Full Course');
+      }
+    } else if (trimmed.includes('github.com')) {
+      setType('github');
+    } else if (trimmed.includes('coursera.org') || trimmed.includes('udemy.com')) {
+      setType('course');
+    } else if (trimmed.includes('arxiv.org')) {
+      setType('paper');
+    }
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim() || !url.trim()) return;
@@ -48,17 +71,30 @@ export const AddCustomResourceModal: React.FC<AddCustomResourceModalProps> = ({
       ? technologiesText.split(',').map(t => t.trim()).filter(Boolean)
       : ['AI', 'Python'];
 
+    const ytInfo = type === 'youtube' ? parseYouTubeUrl(url) : null;
+    let finalImageUrl: string | undefined;
+    if (ytInfo?.videoId) {
+      finalImageUrl = `https://img.youtube.com/vi/${ytInfo.videoId}/hqdefault.jpg`;
+    }
+
     const newResource: ResourceItem = {
       id: `custom-${Date.now()}`,
       topicId,
       type,
       title: title.trim(),
       url: url.trim(),
+      imageUrl: finalImageUrl,
       description: description.trim() || 'Community-contributed resource.',
       difficulty,
       technologies: techs,
       isCustom: true,
-      ...(type === 'youtube' && { channelName: channelOrAuthor, duration: durationOrStars }),
+      ...(type === 'youtube' && { 
+        channelName: channelOrAuthor, 
+        duration: durationOrStars,
+        videoType: (videoType as any) || (ytInfo?.isPlaylist ? 'Playlist' : 'Full Course'),
+        playlistId: ytInfo?.playlistId,
+        videoCount: durationOrStars && durationOrStars.toLowerCase().includes('video') ? durationOrStars : undefined
+      }),
       ...(type === 'github' && { author: channelOrAuthor, stars: durationOrStars }),
       ...(type === 'course' && { instructor: channelOrAuthor, platform: 'Udemy' }),
       ...(type === 'paper' && { authors: channelOrAuthor, year: durationOrStars }),
@@ -121,7 +157,7 @@ export const AddCustomResourceModal: React.FC<AddCustomResourceModalProps> = ({
             </label>
             <div className="grid grid-cols-4 gap-1.5 text-xs font-bold">
               {[
-                { id: 'youtube', label: 'YouTube', icon: <Tv className="w-3.5 h-3.5 text-red-400" /> },
+                { id: 'youtube', label: 'YouTube / Playlists', icon: <ListVideo className="w-3.5 h-3.5 text-red-400" /> },
                 { id: 'github', label: 'GitHub', icon: <Github className="w-3.5 h-3.5 text-emerald-400" /> },
                 { id: 'course', label: 'Course', icon: <GraduationCap className="w-3.5 h-3.5 text-purple-400" /> },
                 { id: 'project', label: 'Project', icon: <Code2 className="w-3.5 h-3.5 text-amber-400" /> },
@@ -141,7 +177,7 @@ export const AddCustomResourceModal: React.FC<AddCustomResourceModalProps> = ({
                   }`}
                 >
                   {cat.icon}
-                  <span className="text-[11px]">{cat.label}</span>
+                  <span className="text-[11px] truncate">{cat.label}</span>
                 </button>
               ))}
             </div>
@@ -155,7 +191,7 @@ export const AddCustomResourceModal: React.FC<AddCustomResourceModalProps> = ({
             <input
               type="text"
               required
-              placeholder="e.g. Build an Autonomous Agent with LangGraph & Python"
+              placeholder={type === 'youtube' && videoType === 'Playlist' ? "e.g. Complete GenAI & Multi-Agent Systems Masterclass Playlist" : "e.g. Build an Autonomous Agent with LangGraph & Python"}
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-xs text-slate-200 focus:outline-none focus:border-cyan-400"
@@ -164,18 +200,49 @@ export const AddCustomResourceModal: React.FC<AddCustomResourceModalProps> = ({
 
           {/* URL */}
           <div>
-            <label className="text-xs font-bold text-slate-300 block mb-1.5">
-              Resource URL *
+            <label className="text-xs font-bold text-slate-300 block mb-1.5 flex items-center justify-between">
+              <span>Resource URL *</span>
+              {type === 'youtube' && (
+                <span className="text-[10px] text-red-400 font-normal">Supports video and playlist URLs</span>
+              )}
             </label>
             <input
               type="url"
               required
-              placeholder="https://..."
+              placeholder={type === 'youtube' ? "https://www.youtube.com/playlist?list=... or https://youtube.com/watch?v=..." : "https://..."}
               value={url}
-              onChange={(e) => setUrl(e.target.value)}
-              className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-xs text-slate-200 focus:outline-none focus:border-cyan-400"
+              onChange={(e) => handleUrlChange(e.target.value)}
+              className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-xs text-slate-200 focus:outline-none focus:border-cyan-400 font-mono text-[11px]"
             />
           </div>
+
+          {/* YouTube Content Format Selector (When type === 'youtube') */}
+          {type === 'youtube' && (
+            <div className="p-3 rounded-2xl bg-red-950/20 border border-red-500/30 space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold text-red-300 flex items-center gap-1.5">
+                  <ListVideo className="w-3.5 h-3.5 text-red-400" />
+                  <span>YouTube Content Format</span>
+                </label>
+                {url && (
+                  <span className="text-[10px] font-mono font-bold text-red-300">
+                    {parseYouTubeUrl(url).isPlaylist ? '✨ Playlist Detected' : (parseYouTubeUrl(url).videoId ? '🎬 Single Video Detected' : '')}
+                  </span>
+                )}
+              </div>
+              <select
+                value={videoType}
+                onChange={(e) => setVideoType(e.target.value)}
+                className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-red-500/40 text-xs font-bold text-red-200 focus:outline-none focus:border-red-400"
+              >
+                <option value="Playlist">YouTube Playlist (Full Video Series / Curriculum)</option>
+                <option value="Full Course">Full Course (Single Long Video / Masterclass)</option>
+                <option value="Tutorial">Tutorial (Hands-on Step-by-Step Lesson)</option>
+                <option value="Deep Dive">Deep Dive (Technical Architecture & Code)</option>
+                <option value="Crash Course">Crash Course (Fast-Paced Fundamentals)</option>
+              </select>
+            </div>
+          )}
 
           {/* Description */}
           <div>
@@ -199,7 +266,7 @@ export const AddCustomResourceModal: React.FC<AddCustomResourceModalProps> = ({
               </label>
               <input
                 type="text"
-                placeholder="e.g. Andrej Karpathy, Stanford"
+                placeholder="e.g. Krish Naik, Andrej Karpathy, Stanford"
                 value={channelOrAuthor}
                 onChange={(e) => setChannelOrAuthor(e.target.value)}
                 className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-xs text-slate-200 focus:outline-none focus:border-cyan-400"
@@ -208,11 +275,11 @@ export const AddCustomResourceModal: React.FC<AddCustomResourceModalProps> = ({
 
             <div>
               <label className="text-xs font-bold text-slate-300 block mb-1.5">
-                Duration / Stars / Year
+                Duration / Videos / Stars
               </label>
               <input
                 type="text"
-                placeholder="e.g. 2.5 hours, 45k+, 2024"
+                placeholder={type === 'youtube' && videoType === 'Playlist' ? "e.g. 24 Videos • 12 Hours" : "e.g. 2.5 hours, 45k+, 2024"}
                 value={durationOrStars}
                 onChange={(e) => setDurationOrStars(e.target.value)}
                 className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-xs text-slate-200 focus:outline-none focus:border-cyan-400"

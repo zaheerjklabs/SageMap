@@ -1,6 +1,7 @@
 import React from 'react';
 import { 
   Tv, 
+  ListVideo,
   Github, 
   Globe, 
   FileText, 
@@ -10,20 +11,22 @@ import {
   Star, 
   Bookmark, 
   Clock, 
-  Sparkles,
+  Sparkles, 
   User,
-  Edit3,
-  Trash2,
-  Code2,
-  GripVertical
+  Edit3, 
+  Trash2, 
+  Code2, 
+  GripVertical,
+  GraduationCap
 } from 'lucide-react';
+import { YouTubeCardBanner } from './YouTubeCardBanner';
 import { GitHubCardBanner } from './GitHubCardBanner';
 import { UdemyCourseBanner } from './UdemyCourseBanner';
 import { UdemyLogo } from './UdemyLogo';
 import { CourseraCourseBanner } from './CourseraCourseBanner';
 import { CourseraLogo } from './CourseraLogo';
-import { GraduationCap } from 'lucide-react';
 import { ResourceItem, ResourceType } from '../types';
+import { parseYouTubeUrl } from '../utils/youtubeUtils';
 
 interface ResourceCardProps {
   resource: ResourceItem;
@@ -46,9 +49,9 @@ export const getResourceThumbnail = (resource: ResourceItem): string => {
   const url = resource.url || '';
 
   // 1. YouTube Thumbnail Extraction (HQ standard thumbnail)
-  const ytMatch = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|v\/|shorts\/))([\w-]{11})/);
-  if (ytMatch && ytMatch[1]) {
-    return `https://img.youtube.com/vi/${ytMatch[1]}/hqdefault.jpg`;
+  const ytParsed = parseYouTubeUrl(url);
+  if (ytParsed.videoId) {
+    return `https://img.youtube.com/vi/${ytParsed.videoId}/hqdefault.jpg`;
   }
 
   // 2. High Quality Domain & Topic Based Unsplash Cover Imagery
@@ -92,10 +95,21 @@ export const ResourceCard: React.FC<ResourceCardProps> = ({
 }) => {
   const isCoursera = resource.url?.includes('coursera.org') || resource.platform === 'Coursera';
   const isUdemy = resource.url?.includes('udemy.com') || resource.platform === 'Udemy';
+  const ytParsed = resource.type === 'youtube' ? parseYouTubeUrl(resource.url) : null;
+  const isPlaylist = resource.type === 'youtube' && (resource.videoType === 'Playlist' || !!ytParsed?.isPlaylist);
 
   const getTypeBadge = (type: ResourceType) => {
     switch (type) {
       case 'youtube':
+        if (isPlaylist) {
+          return {
+            icon: <ListVideo className="w-3.5 h-3.5 text-red-400 shrink-0" />,
+            label: 'YouTube Playlist',
+            border: 'border-red-500/40',
+            bg: 'bg-red-950/80 text-red-300',
+            glow: 'group-hover:border-red-500/60'
+          };
+        }
         return {
           icon: <Tv className="w-3.5 h-3.5 text-red-400 shrink-0" />,
           label: resource.videoType || 'YouTube Video',
@@ -254,29 +268,47 @@ export const ResourceCard: React.FC<ResourceCardProps> = ({
         resource.type === 'book' ? 'p-2 bg-[#06090E]' : ''
       }`}>
         {(resource.imageUrl || resource.thumbnailUrl) ? (
-          <img
-            src={resource.imageUrl || resource.thumbnailUrl}
-            alt={resource.title}
-            onError={(e) => {
-              (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=800&auto=format&fit=crop';
-            }}
-            className={`w-full h-full ${resource.type === 'book' ? 'object-contain drop-shadow-md' : 'object-cover'} group-hover:scale-[1.03] transition-transform duration-500 ease-out`}
-          />
+          <>
+            <img
+              src={resource.imageUrl || resource.thumbnailUrl}
+              alt={resource.title}
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=800&auto=format&fit=crop';
+              }}
+              className={`w-full h-full ${resource.type === 'book' ? 'object-contain drop-shadow-md' : 'object-cover'} group-hover:scale-[1.03] transition-transform duration-500 ease-out`}
+            />
+            {isPlaylist && (
+              <div className="absolute bottom-2 right-2 px-2 py-0.5 rounded-md bg-black/85 backdrop-blur-md border border-red-500/40 text-red-300 text-[10px] font-extrabold flex items-center gap-1 shadow-lg">
+                <ListVideo className="w-3 h-3 text-red-400" />
+                <span>PLAYLIST</span>
+              </div>
+            )}
+          </>
         ) : resource.type === 'github' || (resource.type !== 'project' && resource.url && resource.url.includes('github.com')) ? (
           <GitHubCardBanner resource={resource} />
         ) : (resource.type === 'course' && (resource.url?.includes('coursera.org') || resource.platform === 'Coursera')) ? (
           <CourseraCourseBanner resource={resource} />
         ) : (resource.type === 'course' && (resource.url?.includes('udemy.com') || resource.platform === 'Udemy')) ? (
           <UdemyCourseBanner resource={resource} />
+        ) : resource.type === 'youtube' && !ytParsed?.videoId ? (
+          <YouTubeCardBanner resource={resource} />
         ) : (
-          <img
-            src={thumbnailUrl}
-            alt={resource.title}
-            onError={(e) => {
-              (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=800&auto=format&fit=crop';
-            }}
-            className={`w-full h-full ${resource.type === 'book' ? 'object-contain drop-shadow-md' : 'object-contain'} group-hover:scale-[1.03] transition-transform duration-500 ease-out`}
-          />
+          <>
+            <img
+              src={thumbnailUrl}
+              alt={resource.title}
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=800&auto=format&fit=crop';
+              }}
+              className={`w-full h-full ${resource.type === 'book' ? 'object-contain drop-shadow-md' : 'object-contain'} group-hover:scale-[1.03] transition-transform duration-500 ease-out`}
+            />
+            {isPlaylist && (
+              <div className="absolute bottom-2 right-2 px-2 py-0.5 rounded-md bg-black/85 backdrop-blur-md border border-red-500/40 text-red-300 text-[10px] font-extrabold flex items-center gap-1 shadow-lg">
+                <ListVideo className="w-3 h-3 text-red-400" />
+                <span>PLAYLIST</span>
+              </div>
+            )}
+          </>
         )}
       </div>
 

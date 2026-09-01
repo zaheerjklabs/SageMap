@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   ArrowLeft, 
   Tv, 
+  ListVideo,
   Github, 
   Globe, 
   FileText, 
@@ -11,33 +12,35 @@ import {
   Star, 
   Bookmark, 
   Clock, 
-  Sparkles,
-  User,
-  Edit3,
-  Trash2,
-  Code2,
-  CheckCircle2,
-  Share2,
-  Check,
-  Bot,
-  Layers,
-  GraduationCap,
-  Play,
-  Terminal,
-  Send,
-  Loader2,
-  ChevronRight,
-  ShieldCheck,
+  Sparkles, 
+  User, 
+  Edit3, 
+  Trash2, 
+  Code2, 
+  CheckCircle2, 
+  Share2, 
+  Check, 
+  Bot, 
+  Layers, 
+  GraduationCap, 
+  Play, 
+  Terminal, 
+  Send, 
+  Loader2, 
+  ChevronRight, 
+  ShieldCheck, 
   BookMarked
 } from 'lucide-react';
 import { UdemyLogo } from './UdemyLogo';
 import { CourseraLogo } from './CourseraLogo';
+import { YouTubeCardBanner } from './YouTubeCardBanner';
 import { GitHubCardBanner } from './GitHubCardBanner';
 import { UdemyCourseBanner } from './UdemyCourseBanner';
 import { CourseraCourseBanner } from './CourseraCourseBanner';
 import { ResourceItem, RoadmapTopic } from '../types';
 import { getResourceThumbnail } from './ResourceCard';
 import { deriveResourceDetails, getResourceSlug } from '../utils/resourcePageUtils';
+import { parseYouTubeUrl } from '../utils/youtubeUtils';
 import { GoogleGenAI } from '@google/genai';
 
 interface ResourceDetailPageProps {
@@ -86,6 +89,8 @@ export const ResourceDetailPage: React.FC<ResourceDetailPageProps> = ({
 
   const derived = deriveResourceDetails(resource, parentTopic);
   const thumbnailUrl = getResourceThumbnail(resource);
+  const ytParsed = resource.type === 'youtube' ? parseYouTubeUrl(resource.url) : null;
+  const isPlaylist = resource.type === 'youtube' && (resource.videoType === 'Playlist' || !!ytParsed?.isPlaylist);
 
   // Scroll to top on mount or when resource changes
   useEffect(() => {
@@ -283,6 +288,13 @@ Provide a concise, practical, technical answer with clean Markdown formatting, c
                   </span>
                 )}
 
+                {resource.type === 'youtube' && (
+                  <span className="px-2.5 py-1 rounded-lg text-xs font-bold uppercase tracking-wider bg-red-950/80 text-red-300 border border-red-500/40 flex items-center gap-1.5 shadow-sm">
+                    {isPlaylist ? <ListVideo className="w-3.5 h-3.5 text-red-400" /> : <Tv className="w-3.5 h-3.5 text-red-400" />}
+                    <span>{isPlaylist ? 'YouTube Playlist' : (resource.videoType || 'YouTube Video')}</span>
+                  </span>
+                )}
+
                 {resource.isCustom && (
                   <span className="px-2.5 py-1 rounded-lg text-xs font-mono font-bold bg-cyan-950/80 text-cyan-300 border border-cyan-500/40">
                     Custom Supabase
@@ -413,6 +425,46 @@ Provide a concise, practical, technical answer with clean Markdown formatting, c
             {/* TAB 1: OVERVIEW */}
             {activeTab === 'overview' && (
               <div className="space-y-8 animate-fadeIn">
+                {/* Embedded Video / Playlist Player for YouTube */}
+                {resource.type === 'youtube' && ytParsed?.embedUrl && (
+                  <div className="p-6 md:p-8 rounded-3xl bg-[#0D1117]/95 border border-red-500/30 shadow-2xl backdrop-blur-xl space-y-4">
+                    <div className="flex items-center justify-between gap-3 flex-wrap">
+                      <div className="flex items-center gap-2.5">
+                        <div className="p-2 rounded-xl bg-red-500/10 text-red-400 border border-red-500/30">
+                          {isPlaylist ? <ListVideo className="w-5 h-5" /> : <Tv className="w-5 h-5" />}
+                        </div>
+                        <div>
+                          <h2 className="text-lg md:text-xl font-black text-white tracking-tight">
+                            {isPlaylist ? 'YouTube Playlist Video Stream' : 'Watch Masterclass in SageMap'}
+                          </h2>
+                          <p className="text-xs text-slate-400">
+                            {isPlaylist ? 'Browse and stream playlist series lessons directly within SageMap' : 'Full HD video lecture with playback controls'}
+                          </p>
+                        </div>
+                      </div>
+
+                      <a
+                        href={resource.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-3.5 py-2 rounded-xl bg-red-950/80 border border-red-500/40 text-red-300 hover:bg-red-900/60 text-xs font-bold font-mono transition-colors flex items-center gap-1.5 shrink-0 shadow-sm"
+                      >
+                        <span>{isPlaylist ? 'Open Playlist ↗' : 'Open YouTube ↗'}</span>
+                      </a>
+                    </div>
+
+                    <div className="relative w-full aspect-video rounded-2xl overflow-hidden bg-black border border-slate-800 shadow-2xl">
+                      <iframe
+                        src={ytParsed.embedUrl}
+                        title={resource.title}
+                        className="w-full h-full border-0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                        allowFullScreen
+                      />
+                    </div>
+                  </div>
+                )}
+
                 {/* "What You Will Learn" (2-column green checkmark grid matching Krish Naik UI!) */}
                 <div className="p-6 md:p-8 rounded-3xl bg-[#0D1117]/95 border border-slate-800/80 shadow-2xl backdrop-blur-xl space-y-6">
                   <div className="flex items-center gap-2.5">
@@ -743,20 +795,30 @@ Provide a concise, practical, technical answer with clean Markdown formatting, c
                 resource.type === 'book' ? 'p-3 bg-[#06090E] flex items-center justify-center' : ''
               }`}>
                 {(resource.imageUrl || resource.thumbnailUrl) ? (
-                  <img
-                    src={resource.imageUrl || resource.thumbnailUrl}
-                    alt={resource.title}
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=800&auto=format&fit=crop';
-                    }}
-                    className={`w-full h-full ${resource.type === 'book' ? 'object-contain drop-shadow-xl' : 'object-cover'} group-hover:scale-105 transition-transform duration-500`}
-                  />
+                  <>
+                    <img
+                      src={resource.imageUrl || resource.thumbnailUrl}
+                      alt={resource.title}
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=800&auto=format&fit=crop';
+                      }}
+                      className={`w-full h-full ${resource.type === 'book' ? 'object-contain drop-shadow-xl' : 'object-cover'} group-hover:scale-105 transition-transform duration-500`}
+                    />
+                    {isPlaylist && (
+                      <div className="absolute bottom-3 right-3 px-2.5 py-1 rounded-lg bg-black/85 backdrop-blur-md border border-red-500/40 text-red-300 text-xs font-extrabold flex items-center gap-1.5 shadow-xl">
+                        <ListVideo className="w-3.5 h-3.5 text-red-400" />
+                        <span>PLAYLIST</span>
+                      </div>
+                    )}
+                  </>
                 ) : resource.type === 'github' || (resource.type !== 'project' && resource.url && resource.url.includes('github.com')) ? (
                   <GitHubCardBanner resource={resource} />
                 ) : (resource.type === 'course' && (resource.url?.includes('coursera.org') || resource.platform === 'Coursera')) ? (
                   <CourseraCourseBanner resource={resource} />
                 ) : (resource.type === 'course' && (resource.url?.includes('udemy.com') || resource.platform === 'Udemy')) ? (
                   <UdemyCourseBanner resource={resource} />
+                ) : resource.type === 'youtube' && !ytParsed?.videoId ? (
+                  <YouTubeCardBanner resource={resource} />
                 ) : (
                   <>
                     <img
@@ -767,6 +829,13 @@ Provide a concise, practical, technical answer with clean Markdown formatting, c
                       }}
                       className={`w-full h-full ${resource.type === 'book' ? 'object-contain drop-shadow-xl p-2' : 'object-contain'} group-hover:scale-105 transition-transform duration-500`}
                     />
+
+                    {isPlaylist && (
+                      <div className="absolute bottom-3 right-3 px-2.5 py-1 rounded-lg bg-black/85 backdrop-blur-md border border-red-500/40 text-red-300 text-xs font-extrabold flex items-center gap-1.5 shadow-xl">
+                        <ListVideo className="w-3.5 h-3.5 text-red-400" />
+                        <span>PLAYLIST</span>
+                      </div>
+                    )}
 
                     {/* Tag overlay matching Krish Naik screenshot */}
                     <div className="absolute top-3 left-3 flex items-center gap-1.5">

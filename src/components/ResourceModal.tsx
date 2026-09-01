@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   X, 
   Tv, 
+  ListVideo,
   Github, 
   GraduationCap, 
   Code2, 
@@ -9,13 +10,15 @@ import {
   FileText, 
   BookOpen, 
   Newspaper, 
-  Sparkles,
-  Plus,
-  Edit3,
-  Check
+  Sparkles, 
+  Plus, 
+  Edit3, 
+  Check,
+  PlaySquare
 } from 'lucide-react';
 import { ROADMAP_TOPICS } from '../data/roadmapData';
 import { ResourceItem, ResourceType, DifficultyLevel } from '../types';
+import { parseYouTubeUrl } from '../utils/youtubeUtils';
 
 interface ResourceModalProps {
   isOpen: boolean;
@@ -36,6 +39,7 @@ export const ResourceModal: React.FC<ResourceModalProps> = ({
 
   const [topicId, setTopicId] = useState<number>(initialTopicId);
   const [type, setType] = useState<ResourceType>('youtube');
+  const [videoType, setVideoType] = useState<string>('Playlist');
   const [title, setTitle] = useState('');
   const [url, setUrl] = useState('');
   const [platform, setPlatform] = useState<string>('Coursera');
@@ -56,6 +60,10 @@ export const ResourceModal: React.FC<ResourceModalProps> = ({
     if (editingResource) {
       setTopicId(editingResource.topicId);
       setType(editingResource.type);
+      setVideoType(
+        editingResource.videoType ||
+        (editingResource.type === 'youtube' && parseYouTubeUrl(editingResource.url).isPlaylist ? 'Playlist' : 'Full Course')
+      );
       setTitle(editingResource.title || '');
       setUrl(editingResource.url || '');
       setPlatform(editingResource.platform || (editingResource.url?.includes('udemy.com') ? 'Udemy' : 'Coursera'));
@@ -90,6 +98,7 @@ export const ResourceModal: React.FC<ResourceModalProps> = ({
     } else {
       setTopicId(initialTopicId);
       setType('youtube');
+      setVideoType('Playlist');
       setTitle('');
       setUrl('');
       setPlatform('Coursera');
@@ -116,6 +125,12 @@ export const ResourceModal: React.FC<ResourceModalProps> = ({
       setPlatform('Udemy');
     } else if (trimmed.includes('youtube.com') || trimmed.includes('youtu.be')) {
       setType('youtube');
+      const ytInfo = parseYouTubeUrl(newUrl);
+      if (ytInfo.isPlaylist) {
+        setVideoType('Playlist');
+      } else if (ytInfo.videoId) {
+        setVideoType('Full Course');
+      }
     } else if (trimmed.includes('github.com')) {
       setType('github');
     } else if (trimmed.includes('arxiv.org')) {
@@ -146,6 +161,8 @@ export const ResourceModal: React.FC<ResourceModalProps> = ({
       : undefined;
 
     let finalImageUrl = imageUrl.trim();
+    const ytInfo = type === 'youtube' ? parseYouTubeUrl(url) : null;
+
     if (!finalImageUrl) {
       if (url.includes('udemy.com')) {
         finalImageUrl = `https://api.microlink.io/?url=${encodeURIComponent(url.trim().split('?')[0])}&embed=image.url`;
@@ -156,11 +173,8 @@ export const ResourceModal: React.FC<ResourceModalProps> = ({
           const repo = ghMatch[2].replace(/\.git$/, '').split('#')[0].split('?')[0];
           finalImageUrl = `https://opengraph.githubassets.com/1/${owner}/${repo}`;
         }
-      } else {
-        const ytMatch = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|v\/|shorts\/))([\w-]{11})/);
-        if (ytMatch && ytMatch[1]) {
-          finalImageUrl = `https://img.youtube.com/vi/${ytMatch[1]}/hqdefault.jpg`;
-        }
+      } else if (ytInfo && ytInfo.videoId) {
+        finalImageUrl = `https://img.youtube.com/vi/${ytInfo.videoId}/hqdefault.jpg`;
       }
     }
 
@@ -182,7 +196,13 @@ export const ResourceModal: React.FC<ResourceModalProps> = ({
       keyHighlights: highlights,
       isCustom: editingResource ? (editingResource.isCustom ?? false) : true,
       isEdited: isEdit ? true : undefined,
-      ...(type === 'youtube' && { channelName: channelOrAuthor, duration: durationOrStars }),
+      ...(type === 'youtube' && { 
+        channelName: channelOrAuthor, 
+        duration: durationOrStars,
+        videoType: (videoType as any) || (ytInfo?.isPlaylist ? 'Playlist' : 'Full Course'),
+        playlistId: ytInfo?.playlistId,
+        videoCount: durationOrStars && durationOrStars.toLowerCase().includes('video') ? durationOrStars : undefined
+      }),
       ...(type === 'github' && { author: channelOrAuthor, stars: durationOrStars }),
       ...(type === 'course' && { 
         instructor: channelOrAuthor, 
@@ -256,7 +276,7 @@ export const ResourceModal: React.FC<ResourceModalProps> = ({
             </label>
             <div className="grid grid-cols-4 gap-1.5 text-xs font-bold">
               {[
-                { id: 'youtube', label: 'YouTube', icon: <Tv className="w-3.5 h-3.5 text-red-400" /> },
+                { id: 'youtube', label: 'YouTube / Playlists', icon: <ListVideo className="w-3.5 h-3.5 text-red-400" /> },
                 { id: 'github', label: 'GitHub', icon: <Github className="w-3.5 h-3.5 text-emerald-400" /> },
                 { id: 'course', label: 'Course', icon: <GraduationCap className="w-3.5 h-3.5 text-purple-400" /> },
                 { id: 'project', label: 'Project', icon: <Code2 className="w-3.5 h-3.5 text-amber-400" /> },
@@ -276,7 +296,7 @@ export const ResourceModal: React.FC<ResourceModalProps> = ({
                   }`}
                 >
                   {cat.icon}
-                  <span className="text-[11px]">{cat.label}</span>
+                  <span className="text-[11px] truncate">{cat.label}</span>
                 </button>
               ))}
             </div>
@@ -290,7 +310,7 @@ export const ResourceModal: React.FC<ResourceModalProps> = ({
             <input
               type="text"
               required
-              placeholder="e.g. Build an Autonomous Agent with LangGraph & Python"
+              placeholder={type === 'youtube' && videoType === 'Playlist' ? "e.g. Complete GenAI & Multi-Agent Systems Masterclass Playlist" : "e.g. Build an Autonomous Agent with LangGraph & Python"}
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-xs font-bold text-slate-200 focus:outline-none focus:border-amber-400"
@@ -299,29 +319,62 @@ export const ResourceModal: React.FC<ResourceModalProps> = ({
 
           {/* URL */}
           <div>
-            <label className="text-xs font-bold text-slate-300 block mb-1.5">
-              Resource URL *
+            <label className="text-xs font-bold text-slate-300 block mb-1.5 flex items-center justify-between">
+              <span>Resource URL *</span>
+              {type === 'youtube' && (
+                <span className="text-[10px] text-red-400 font-normal">Supports single videos & full playlist links</span>
+              )}
             </label>
             <input
               type="url"
               required
-              placeholder="https://..."
+              placeholder={type === 'youtube' ? "https://www.youtube.com/playlist?list=... or https://youtube.com/watch?v=..." : "https://..."}
               value={url}
               onChange={(e) => handleUrlChange(e.target.value)}
               className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-xs text-slate-200 focus:outline-none focus:border-amber-400 font-mono text-[11px]"
             />
           </div>
 
+          {/* YouTube Content Format Selector (When type === 'youtube') */}
+          {type === 'youtube' && (
+            <div className="p-3 rounded-2xl bg-red-950/20 border border-red-500/30 space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold text-red-300 flex items-center gap-1.5">
+                  <ListVideo className="w-3.5 h-3.5 text-red-400" />
+                  <span>YouTube Content Format</span>
+                </label>
+                {url && (
+                  <span className="text-[10px] font-mono font-bold text-red-300">
+                    {parseYouTubeUrl(url).isPlaylist ? '✨ Playlist Detected' : (parseYouTubeUrl(url).videoId ? '🎬 Single Video Detected' : '')}
+                  </span>
+                )}
+              </div>
+              <select
+                value={videoType}
+                onChange={(e) => setVideoType(e.target.value)}
+                className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-red-500/40 text-xs font-bold text-red-200 focus:outline-none focus:border-red-400"
+              >
+                <option value="Playlist">YouTube Playlist (Full Video Series / Curriculum)</option>
+                <option value="Full Course">Full Course (Single Long Video / Masterclass)</option>
+                <option value="Tutorial">Tutorial (Hands-on Step-by-Step Lesson)</option>
+                <option value="Deep Dive">Deep Dive (Technical Architecture & Code)</option>
+                <option value="Crash Course">Crash Course (Fast-Paced Fundamentals)</option>
+              </select>
+            </div>
+          )}
+
           {/* Custom Banner Image URL with Live Preview */}
           <div>
             <label className="text-xs font-bold text-slate-300 block mb-1.5 flex items-center justify-between">
               <span>Thumbnail / Image URL</span>
-              <span className="text-[10px] text-amber-400 font-normal">Direct image URL (JPG, PNG, WebP)</span>
+              <span className="text-[10px] text-amber-400 font-normal">
+                {type === 'youtube' ? 'Auto-extracted from YouTube or enter custom image' : 'Direct image URL (JPG, PNG, WebP)'}
+              </span>
             </label>
             <div className="flex gap-2">
               <input
                 type="url"
-                placeholder="https://images.unsplash.com/... or any direct image URL"
+                placeholder={type === 'youtube' ? "Auto-generated from YouTube (or paste custom URL)" : "https://images.unsplash.com/... or any direct image URL"}
                 value={imageUrl}
                 onChange={(e) => setImageUrl(e.target.value)}
                 className="flex-1 px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-xs text-slate-200 focus:outline-none focus:border-amber-400 font-mono text-[11px]"

@@ -334,7 +334,7 @@ export const TopicDashboard: React.FC<TopicDashboardProps> = ({
                 }`}
               >
                 <Tv className="w-3.5 h-3.5 text-red-400" />
-                <span>YouTube</span>
+                <span>YouTube & Playlists</span>
               </button>
 
               <button

@@ -47,7 +47,9 @@ export interface ResourceItem {
   // YouTube specific
   channelName?: string;
   duration?: string;
-  videoType?: 'Full Course' | 'Playlist' | 'Deep Dive' | 'Tutorial' | 'Crash Course';
+  videoType?: 'Full Course' | 'Playlist' | 'Deep Dive' | 'Tutorial' | 'Crash Course' | 'Series';
+  playlistId?: string;
+  videoCount?: number | string;
   
   // GitHub specific
   stars?: string;
