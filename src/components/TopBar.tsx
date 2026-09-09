@@ -264,7 +264,7 @@ export const TopBar: React.FC<TopBarProps> = ({
             <button
               onClick={onLoginClick}
               className="flex px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-500/20 via-amber-400/20 to-cyan-500/20 hover:from-amber-500/30 hover:to-cyan-500/30 border border-amber-500/40 text-xs font-bold text-amber-300 items-center gap-1.5 transition-all shrink-0 whitespace-nowrap shadow-sm group"
-              title="Sign in with Google, GitHub, Phone OTP, or Email"
+              title="Sign in with GitHub or Email"
             >
               <LogIn className="w-3.5 h-3.5 text-amber-400 group-hover:scale-110 transition-transform shrink-0" />
               <span>Sign In / Login</span>
