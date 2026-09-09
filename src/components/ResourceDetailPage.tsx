@@ -117,7 +117,11 @@ export const ResourceDetailPage: React.FC<ResourceDetailPageProps> = ({
     setIsAiLoading(true);
 
     try {
-      const apiKey = import.meta.env.VITE_GEMINI_API_KEY || (window as any).VITE_GEMINI_API_KEY || '';
+      const apiKey =
+        import.meta.env.VITE_GEMINI_API_KEY ||
+        (window as any).VITE_GEMINI_API_KEY ||
+        (typeof window !== 'undefined' ? localStorage.getItem('sagemap_gemini_api_key') : '') ||
+        '';
       if (!apiKey) {
         setAiMessages(prev => [
           ...prev,
