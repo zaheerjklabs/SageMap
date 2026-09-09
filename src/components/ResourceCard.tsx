@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { YouTubeCardBanner } from './YouTubeCardBanner';
 import { GitHubCardBanner } from './GitHubCardBanner';
+import { PaperCardBanner } from './PaperCardBanner';
 import { UdemyCourseBanner } from './UdemyCourseBanner';
 import { UdemyLogo } from './UdemyLogo';
 import { CourseraCourseBanner } from './CourseraCourseBanner';
@@ -284,6 +285,8 @@ export const ResourceCard: React.FC<ResourceCardProps> = ({
               </div>
             )}
           </>
+        ) : resource.type === 'paper' || (resource.url && resource.url.includes('arxiv.org')) ? (
+          <PaperCardBanner resource={resource} />
         ) : resource.type === 'github' || (resource.type !== 'project' && resource.url && resource.url.includes('github.com')) ? (
           <GitHubCardBanner resource={resource} />
         ) : (resource.type === 'course' && (resource.url?.includes('coursera.org') || resource.platform === 'Coursera')) ? (

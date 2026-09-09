@@ -35,6 +35,7 @@ import { UdemyLogo } from './UdemyLogo';
 import { CourseraLogo } from './CourseraLogo';
 import { YouTubeCardBanner } from './YouTubeCardBanner';
 import { GitHubCardBanner } from './GitHubCardBanner';
+import { PaperCardBanner } from './PaperCardBanner';
 import { UdemyCourseBanner } from './UdemyCourseBanner';
 import { CourseraCourseBanner } from './CourseraCourseBanner';
 import { ResourceItem, RoadmapTopic } from '../types';
@@ -811,6 +812,8 @@ Provide a concise, practical, technical answer with clean Markdown formatting, c
                       </div>
                     )}
                   </>
+                ) : resource.type === 'paper' || (resource.url && resource.url.includes('arxiv.org')) ? (
+                  <PaperCardBanner resource={resource} />
                 ) : resource.type === 'github' || (resource.type !== 'project' && resource.url && resource.url.includes('github.com')) ? (
                   <GitHubCardBanner resource={resource} />
                 ) : (resource.type === 'course' && (resource.url?.includes('coursera.org') || resource.platform === 'Coursera')) ? (
